@@ -782,6 +782,7 @@ pub fn feed_check_files(files: &BTreeMap<String, Vec<u8>>) -> Result<()> {
 #[derive(Serialize)]
 pub struct XExport {
     pub html: String,
+    pub preview_html: String,
     pub text: String,
     pub caption: String,
     pub warnings: Vec<String>,
@@ -860,6 +861,10 @@ pub fn export_x(s: &Snapshot, a: &Article) -> XExport {
         warnings.insert("Raw HTML is exported as visible text.".into());
     }
     XExport {
+        preview_html: (header_html.clone() + &markdown(&a.body, p, true)).replace(
+            &format!("{}/media/", p.base_url.trim_end_matches('/')),
+            &format!("file://{}/media/", s.root.display()),
+        ),
         html: header_html + &markdown(&a.body, p, false),
         text: header_text + plain.trim(),
         caption: a.meta.x_caption.clone(),

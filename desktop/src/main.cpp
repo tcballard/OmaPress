@@ -19,8 +19,6 @@ int main(int argc,char **argv){
     QQmlApplicationEngine engine;engine.rootContext()->setContextProperty("backend",&bridge);
     QObject::connect(&engine,&QQmlApplicationEngine::objectCreationFailed,&app,[]{QCoreApplication::exit(1);},Qt::QueuedConnection);
     engine.load(QUrl("qrc:/qml/Main.qml"));if(engine.rootObjects().isEmpty())return 1;
-    const int publicationIndex=args.indexOf("--publication");
-    if(publicationIndex>=0&&publicationIndex+1<args.size())QMetaObject::invokeMethod(engine.rootObjects().first(),"openPublication",Q_ARG(QVariant,QVariant(args.at(publicationIndex+1))));
     if(args.contains("--smoke"))QTimer::singleShot(1500,&app,&QCoreApplication::quit);
     const int screenshotIndex=args.indexOf("--screenshot");
     if(screenshotIndex>=0&&screenshotIndex+1<args.size())QTimer::singleShot(2000,&app,[&]{auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(window)window->grabWindow().save(args.at(screenshotIndex+1));app.quit();});

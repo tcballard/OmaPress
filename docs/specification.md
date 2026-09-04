@@ -1,10 +1,10 @@
 # Native Omarchy publishing specification
 
-Status: Proposed  
-Product name: OmaPress  
-Canonical repository: https://github.com/tcballard/OmaPress  
-First publication: Fixing Everything  
-Target platform: Omarchy Quattro  
+Status: Proposed
+Product name: OmaPress
+Canonical repository: https://github.com/tcballard/OmaPress
+First publication: Fixing Everything
+Target platform: Omarchy Quattro
 Document date: 4 September 2026
 
 ## 1. Product statement

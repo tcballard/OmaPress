@@ -24,7 +24,7 @@ Bridge::Bridge(QObject *parent):QObject(parent) {
 Bridge::~Bridge(){if(m_active){m_active->kill();m_active->waitForFinished(1000);}stopPreview();}
 void Bridge::setPublicationPath(const QString &path){if(path==m_path)return;stopPreview();m_path=path;emit publicationPathChanged();}
 QString Bridge::localPath(const QUrl &url)const{return url.toLocalFile();}
-QString Bridge::lastPublication()const{return QSettings().value("lastPublication").toString();}
+QString Bridge::lastPublication()const{const auto args=QCoreApplication::arguments();const int index=args.indexOf("--publication");if(index>=0&&index+1<args.size())return args.at(index+1);return QSettings().value("lastPublication").toString();}
 QString Bridge::cliPath()const{auto override=qEnvironmentVariable("OMAPRESS_CLI");if(!override.isEmpty())return override;const QString sibling=QCoreApplication::applicationDirPath()+"/omapress";if(QFile::exists(sibling))return sibling;return QStandardPaths::findExecutable("omapress");}
 void Bridge::request(const QString &command,const QVariantMap &args,const QString &tag){
     const QString actualTag=tag.isEmpty()?command:tag;

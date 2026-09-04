@@ -256,7 +256,7 @@ ApplicationWindow {
     Dialog {id:unsavedDialog;title:"Save your changes?";modal:true;anchors.centerIn:parent;width:460
         ColumnLayout {width:parent.width
             Label {text:"This article has changes that have not been saved.";wrapMode:Text.Wrap;Layout.fillWidth:true}
-            RowLayout {Button{text:"Cancel";onClicked:{pendingAction=null;unsavedDialog.close()}}Button{text:"Discard";onClicked:{dirty=false;recoveryTimer.stop();var next=pendingAction;pendingAction=null;unsavedDialog.close();if(next)next()}}Button{text:"Save";highlighted:true;onClicked:{unsavedDialog.close();save()}}}
+            RowLayout {Button{text:"Cancel";onClicked:{pendingAction=null;unsavedDialog.close()}}Button{text:"Discard";onClicked:{dirty=false;recoveryTimer.stop();backend.request("recovery-clear",{article:articlePath},"cleared");var next=pendingAction;pendingAction=null;unsavedDialog.close();if(next)next()}}Button{text:"Save";highlighted:true;onClicked:{unsavedDialog.close();save()}}}
         }
     }
     Dialog {id:recoveryDialog;title:"Recover unsaved work?";modal:true;anchors.centerIn:parent;width:480
@@ -278,7 +278,7 @@ ApplicationWindow {
             Repeater {model:exportData.warnings||[];delegate:Label {required property string modelData;text:modelData;wrapMode:Text.Wrap;Layout.fillWidth:true;color:backend.accent}}
             TabBar {id:exportTabs;Layout.fillWidth:true;TabButton{text:"Article"}TabButton{text:"Plain text"}TabButton{text:"Caption"}}
             StackLayout {currentIndex:exportTabs.currentIndex;Layout.fillWidth:true;Layout.fillHeight:true
-                ScrollView {clip:true;TextArea{text:exportData.html||"";textFormat:TextEdit.RichText;readOnly:true;wrapMode:TextEdit.Wrap;Accessible.name:"X rich article preview"}}
+                ScrollView {clip:true;TextArea{text:exportData.preview_html||"";textFormat:TextEdit.RichText;readOnly:true;wrapMode:TextEdit.Wrap;Accessible.name:"X rich article preview"}}
                 ScrollView {clip:true;TextArea{text:exportData.text||"";readOnly:true;wrapMode:TextEdit.Wrap;Accessible.name:"X plain text preview"}}
                 ScrollView {clip:true;TextArea{text:exportData.caption||"";readOnly:true;wrapMode:TextEdit.Wrap;Accessible.name:"X caption preview"}}
             }

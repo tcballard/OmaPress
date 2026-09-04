@@ -388,3 +388,26 @@ fn empty_publication_has_valid_feeds() {
     let feed: serde_json::Value = serde_json::from_slice(&b.files["feed.json"]).unwrap();
     assert_eq!(feed["items"], json!([]));
 }
+
+#[test]
+fn x_preview_is_offline_but_clipboard_retains_image_reference() {
+    let (_t, s) = fixture();
+    let a = parse_article(
+        "content/a.md",
+        article(
+            ID,
+            "story",
+            Status::Draft,
+            "![Remote](https://example.com/image.png)",
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    let export = render::export_x(&s, &a);
+    assert!(!export.preview_html.contains("<img"));
+    assert!(
+        export
+            .html
+            .contains("src=\"https://example.com/image.png\"")
+    );
+}

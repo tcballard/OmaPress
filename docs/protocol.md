@@ -27,7 +27,7 @@ Validation includes `result.valid`; the standalone CLI exits nonzero when it is 
 | save-config | text (TOML), expected_source_hash | Inspection |
 | build | expected_source_hash, output (default output) | Build manifest |
 | feed-check | none | Verified output hashes and feeds |
-| export-x | article | html, text, caption, warnings |
+| export-x | article | html, offline preview_html, text, caption, warnings |
 | github-status | none | Authenticated account, no token |
 | repositories | none | Available repository list |
 | setup | repository, create, expected_source_hash | Destination validation/setup outcome |
