@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=OmaPress
+Comment=Write and publish your independent publication
+Exec=omapress-desktop
+Icon=omapress
+Terminal=false
+Categories=Office;Publishing;
+Keywords=Markdown;RSS;Blog;Publishing;
+StartupWMClass=omapress-desktop

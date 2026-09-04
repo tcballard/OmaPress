@@ -1,0 +1,27 @@
+pkgname=omapress
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Native local-first publishing for Omarchy'
+arch=('x86_64')
+url='https://github.com/tcballard/OmaPress'
+license=('MIT')
+depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl')
+makedepends=('rust' 'cmake')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP') # Replace with the release archive SHA-256 before distribution.
+build() {
+  cd "OmaPress-$pkgver"
+  cargo build --release --locked
+  cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build/desktop --parallel 2
+}
+check() {
+  cd "OmaPress-$pkgver"
+  cargo test --workspace --locked
+}
+package() {
+  cd "OmaPress-$pkgver"
+  DESTDIR="$pkgdir" cmake --install build/desktop
+  install -Dm755 target/release/omapress "$pkgdir/usr/bin/omapress"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/omapress/LICENSE"
+}

@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tcballard/OmaPress/schemas/publication.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "name",
+    "description",
+    "base_url",
+    "language",
+    "timezone",
+    "author"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "name": {
+      "type": "string"
+    },
+    "tagline": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "base_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "language": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "about": {
+      "type": "string"
+    },
+    "feeds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "full_content": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "full_content",
+        "limit"
+      ]
+    },
+    "deploy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "const": "github-pages"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        }
+      }
+    },
+    "series": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "route"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "maxLength": 100
+          }
+        }
+      }
+    },
+    "x_export_order": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "masthead",
+          "edition",
+          "title",
+          "date"
+        ]
+      }
+    }
+  }
+}

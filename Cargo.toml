@@ -1,0 +1,21 @@
+[workspace]
+members = ["crates/omapress-core", "crates/omapress-cli"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0-rc.1"
+edition = "2024"
+license = "MIT"
+rust-version = "1.98"
+repository = "https://github.com/tcballard/OmaPress"
+
+[workspace.dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = "s"

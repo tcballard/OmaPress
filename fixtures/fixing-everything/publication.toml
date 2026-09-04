@@ -1,0 +1,33 @@
+schema = 1
+name = "Fixing Everything — sample"
+tagline = ""
+description = "An independent publication"
+base_url = "https://example.com/publication"
+language = "en-GB"
+timezone = "Europe/London"
+author = "Example Author"
+theme = "default"
+about = "An independent publication. Written and published with OmaPress."
+x_export_order = [
+    "masthead",
+    "edition",
+    "title",
+    "date",
+]
+
+[feeds]
+full_content = true
+limit = 50
+
+[deploy]
+provider = "github-pages"
+repository = ""
+branch = "gh-pages"
+
+[series.today-in-omarchy]
+title = "Today in Omarchy"
+route = "today-in-omarchy"
+
+[series.unofficial-week-in-omarchy]
+title = "The Unofficial Week in Omarchy"
+route = "the-unofficial-week-in-omarchy"
