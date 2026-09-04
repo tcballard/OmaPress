@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="{{ language }}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} · {{ name }}</title><meta name="description" content="{{ summary }}">
+<link rel="canonical" href="{{ canonical }}"><link rel="stylesheet" href="{{ base }}/assets/style.css">
+<link rel="icon" href="{{ base }}/favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/rss+xml" title="{{ name }}" href="{{ base }}/rss.xml">
+<link rel="alternate" type="application/atom+xml" href="{{ base }}/atom.xml">
+<link rel="alternate" type="application/feed+json" href="{{ base }}/feed.json">
+<meta property="og:title" content="{{ title }}"><meta property="og:description" content="{{ summary }}"><meta property="og:url" content="{{ canonical }}"><meta property="og:type" content="{{ kind }}">
+{% if image %}<meta property="og:image" content="{{ image }}"><meta name="twitter:card" content="summary_large_image">{% else %}<meta name="twitter:card" content="summary">{% endif %}
+</head><body><a class="skip" href="#main">Skip to content</a>
+<header class="masthead"><a class="publication" href="{{ base }}/">{{ name }}</a>{% if tagline %}<p>{{ tagline }}</p>{% endif %}
+<nav aria-label="Publication"><a href="{{ base }}/">Latest</a><a href="{{ base }}/archive/">Archive</a><a href="{{ base }}/about/">About</a><a href="{{ base }}/rss.xml">RSS</a></nav></header>
+<main id="main">{{ content|safe }}</main>
+<footer><p>{{ name }} · {{ author }}</p><p>Read independently. <a href="{{ base }}/rss.xml">Subscribe by RSS</a>.</p></footer>
+</body></html>

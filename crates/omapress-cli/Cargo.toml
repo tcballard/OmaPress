@@ -1,0 +1,17 @@
+[package]
+name = "omapress-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "omapress"
+path = "src/main.rs"
+
+[dependencies]
+omapress-core = { path = "../omapress-core" }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+clap = { version = "4", features = ["derive"] }

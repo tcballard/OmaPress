@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tcballard/OmaPress/schemas/protocol.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "command"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "command": {
+      "enum": [
+        "init",
+        "inspect",
+        "read",
+        "validate",
+        "render",
+        "render-document",
+        "save",
+        "save-document",
+        "new",
+        "delete",
+        "import-article",
+        "import-media",
+        "save-config",
+        "build",
+        "feed-check",
+        "export-x",
+        "github-status",
+        "repositories",
+        "setup",
+        "publish-plan",
+        "publish",
+        "recheck",
+        "rollback",
+        "recovery-document",
+        "recovery-save",
+        "recovery-clear"
+      ]
+    },
+    "path": {
+      "type": "string"
+    },
+    "args": {
+      "type": "object"
+    }
+  }
+}

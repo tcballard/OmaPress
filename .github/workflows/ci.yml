@@ -1,0 +1,58 @@
+name: CI
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  engine:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.0
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+      - run: cargo build --workspace --locked
+      - run: python3 tests/deployment.py
+      - run: python3 tests/preview_http.py
+      - run: cargo build --release --locked
+      - run: python3 scripts/benchmark.py | tee benchmark.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engine-benchmark
+          path: benchmark.json
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.0
+      - run: sudo apt-get update && sudo apt-get install -y cmake qt6-base-dev qt6-declarative-dev qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts qml6-module-qtquick-dialogs qml6-module-qtquick-templates qml6-module-qtqml-workerscript qml6-module-qtquick-window xvfb libgl1-mesa-dri
+      - run: cargo build --release --locked
+      - run: cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release && cmake --build build/desktop --parallel 2
+      - name: Native application and clipboard smoke
+        env:
+          OMAPRESS_CLI: ${{ github.workspace }}/target/release/omapress
+          QT_QUICK_BACKEND: software
+        run: |
+          xvfb-run -a build/desktop/omapress-desktop --publication "$PWD/fixtures/fixing-everything" --smoke
+          xvfb-run -a build/desktop/omapress-desktop --clipboard-smoke
+      - run: python3 scripts/package.py
+      - name: Install bundle and verify both binaries
+        run: |
+          bundle=$(find dist -mindepth 1 -maxdepth 1 -type d -name 'omapress-*' -print -quit)
+          sh "$bundle/install.sh" "$RUNNER_TEMP/omapress-installed"
+          "$RUNNER_TEMP/omapress-installed/bin/omapress" --version
+          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software "$RUNNER_TEMP/omapress-installed/bin/omapress-desktop" --smoke
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omapress-linux-x86_64
+          path: |
+            dist/*.tar.gz
+            dist/SHA256SUMS
