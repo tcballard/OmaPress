@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Pressroom publishing queue every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=60s
+AccuracySec=1s
+Unit=pressroom-worker.service
+
+[Install]
+WantedBy=timers.target

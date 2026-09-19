@@ -22,13 +22,41 @@ fn secret(operation: &str, input: &[u8]) -> Result<String> {
         )
     })
 }
+// Explicit headless-worker opt-in. Desktop defaults remain Secret Service.
+fn worker_credentials() -> Result<Option<std::path::PathBuf>> {
+    use std::os::unix::fs::MetadataExt;
+    let Some(path) = std::env::var_os("PRESSROOM_X_CREDENTIALS_FILE") else {
+        return Ok(None);
+    };
+    let path = std::path::PathBuf::from(path);
+    ensure!(
+        path.is_absolute(),
+        "Worker credential path must be absolute"
+    );
+    let metadata = std::fs::symlink_metadata(&path).context("Worker X credentials unavailable")?;
+    ensure!(
+        metadata.is_file()
+            && metadata.mode() & 0o077 == 0
+            && metadata.uid() == unsafe { libc::geteuid() },
+        "Worker credentials must be an owner-only regular file owned by this user"
+    );
+    Ok(Some(path))
+}
 fn read() -> Result<Value> {
-    let raw = secret("lookup", &[])?;
+    let raw = if let Some(path) = worker_credentials()? {
+        String::from_utf8(crate::storage::read_bounded(&path, 64 * 1024)?)?
+    } else {
+        secret("lookup", &[])?
+    };
     // Migrate pre-OAuth manually stored tokens without copying them to disk.
     Ok(serde_json::from_str(raw.trim()).unwrap_or_else(|_| json!({"access_token":raw.trim()})))
 }
 fn store(value: &Value) -> Result<()> {
-    secret("store", &serde_json::to_vec(value)?)?;
+    if let Some(path) = worker_credentials()? {
+        crate::storage::atomic_write(&path, &serde_json::to_vec(value)?)?;
+    } else {
+        secret("store", &serde_json::to_vec(value)?)?;
+    }
     Ok(())
 }
 pub fn disconnect() -> Result<Value> {

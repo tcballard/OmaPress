@@ -1,3 +1,4 @@
+#include <QUuid>
 #include "Bridge.h"
 #include <QGuiApplication>
 #include <QClipboard>
@@ -42,7 +43,7 @@ void Bridge::next(){
     connect(m_active,&QProcess::errorOccurred,this,[this](QProcess::ProcessError e){if(e==QProcess::FailedToStart){if(m_current.generation==m_generation)emit failed(m_current.tag,m_active->errorString());m_active->deleteLater();m_active=nullptr;m_deadline.stop();emit busyChanged();QTimer::singleShot(0,this,&Bridge::next);}});
     connect(m_active,qOverload<int,QProcess::ExitStatus>(&QProcess::finished),this,[this]{finish();});
     connect(m_active,&QProcess::started,this,[this]{QJsonObject input{{"schema",1},{"command",m_current.command},{"path",m_current.path},{"args",QJsonObject::fromVariantMap(m_current.args)}};m_active->write(QJsonDocument(input).toJson(QJsonDocument::Compact));m_active->closeWriteChannel();});
-    const bool network=QStringList{"publish","rollback","recheck","publish-plan","setup","repositories","github-status","x-connect","x-status","x-disconnect","x-draft","x-publish","distribution-review","distribution-publish"}.contains(m_current.command);
+    const bool network=QStringList{"publish","rollback","recheck","publish-plan","setup","repositories","github-status","x-connect","x-status","x-disconnect","x-draft","x-publish","distribution-review","distribution-publish","remote-queue"}.contains(m_current.command);
     m_deadline.start(network?600000:15000);m_active->start();emit busyChanged();
 }
 void Bridge::finish(){
@@ -80,3 +81,8 @@ void Bridge::loadTheme(){
     emit themeChanged();
 }
 void Bridge::selectText(QObject *editor,int start,int end){QMetaObject::invokeMethod(editor,"select",Q_ARG(int,start),Q_ARG(int,end));}
+
+QString Bridge::newJobId() const { return QUuid::createUuid().toString(QUuid::WithoutBraces); }
+
+QVariantMap Bridge::workerSettings() const { QSettings s; s.beginGroup("worker/"+m_path); return {{"host",s.value("host")},{"path",s.value("path")}}; }
+void Bridge::saveWorkerSettings(const QString &host,const QString &path) { QSettings s; s.beginGroup("worker/"+m_path); s.setValue("host",host);s.setValue("path",path); }
