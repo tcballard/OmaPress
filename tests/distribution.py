@@ -18,7 +18,7 @@ class DistributionTests(unittest.TestCase):
         self.pub=self.root/'publication'
         self.bin=self.root/'bin';self.bin.mkdir()
         self.calls=self.root/'calls'
-        self.env=dict(os.environ,PATH=str(self.bin)+os.pathsep+os.environ['PATH'],PRESSROOM_TEST_CALLS=str(self.calls))
+        self.env=dict(os.environ,PATH=str(self.bin)+os.pathsep+os.environ['PATH'],PRESSROOM_TEST_CALLS=str(self.calls),XDG_STATE_HOME=str(self.root/'state'))
         self.tool('secret-tool',"print('test-user-token')")
         self.tool('curl',"""import os,sys,json
 from pathlib import Path
@@ -55,6 +55,96 @@ Another paragraph.
         data=json.loads(result.stdout)
         self.assertEqual(data['ok'],expect,data)
         return data.get('result') if expect else data['error']
+    def native(self,command,expect=True,origin=None,**args):
+        import struct
+        message=json.dumps(dict(command=command,**args)).encode()
+        origin=origin or (ROOT/'companion/origin.txt').read_text().strip()
+        result=subprocess.run([str(ENGINE),'native-message',origin],input=struct.pack('=I',len(message))+message,capture_output=True,env=self.env,timeout=10)
+        self.assertEqual(result.returncode,0,result.stderr)
+        length=struct.unpack('=I',result.stdout[:4])[0]
+        self.assertEqual(len(result.stdout[4:]),length)
+        data=json.loads(result.stdout[4:]);self.assertEqual(data['ok'],expect,data)
+        return data.get('result') if expect else data['error']
+    def test_substack_outbox_is_private_stale_safe_and_explicitly_confirmed(self):
+        p=self.rpc('substack-prepare',**self.args);id=p['outbox_id']
+        self.assertEqual(self.rpc('distribution-plan',**self.args)['targets'][2]['status'],'awaiting_browser')
+        self.assertEqual(self.native('list')['items'][0]['id'],id)
+        import base64
+        bundle=json.loads(base64.b64decode(self.native('read',id=id)['data']))
+        self.assertEqual(bundle['title'],'A test article')
+        self.assertNotIn('root',bundle)
+        self.assertEqual((self.root/'state/pressroom'/f'{id}.json').stat().st_mode & 0o777,0o600)
+        self.native('confirm',id=id,url='https://author.substack.com/p/story')
+        self.assertEqual(self.rpc('distribution-plan',**self.args)['targets'][2]['status'],'confirmed_by_user')
+        self.assertIn('already recorded',self.rpc('substack-prepare',expect=False,**self.args))
+        story=self.pub/self.args['article'];story.write_text(story.read_text()+'\nA correction.\n')
+        self.native('read',expect=False,id=id)
+        self.native('remove',id=id)
+        self.assertEqual(self.native('list')['items'],[])
+        self.assertEqual(self.routes(),[])
+    def test_substack_only_batch_and_unknown_native_operations(self):
+        p=self.rpc('distribution-publish',website=False,x=False,substack=True,**self.args)
+        self.assertEqual(p['results'][0]['result']['status'],'awaiting_browser')
+        id=p['results'][0]['result']['outbox_id']
+        self.native('read',expect=False,id='../publication/publication.toml')
+        self.native('x-connect',expect=False,id=id)
+        self.native('confirm',expect=False,id=id,url='http://author.substack.com/p/story')
+    def test_oauth_loopback_flow_refresh_and_disconnect(self):
+        secret=self.root/'keyring'
+        self.env['PRESSROOM_TEST_SECRET']=str(secret)
+        self.tool('secret-tool',"""import os,sys
+from pathlib import Path
+p=Path(os.environ['PRESSROOM_TEST_SECRET'])
+if sys.argv[1]=='store':p.write_text(sys.stdin.read())
+elif sys.argv[1]=='clear':p.unlink()
+else:print(p.read_text())
+""")
+        self.tool('xdg-open',"""import socket,sys,urllib.parse
+url=urllib.parse.urlparse(sys.argv[1]);q=urllib.parse.parse_qs(url.query)
+assert q['code_challenge_method']==['S256']
+assert len(q['state'][0])==43
+request='GET /callback?code=fixture-code&state='+q['state'][0]+' HTTP/1.1\\r\\nHost: 127.0.0.1:39123\\r\\n\\r\\n'
+s=socket.create_connection(('127.0.0.1',39123));s.sendall(request.encode());s.close()
+""")
+        self.tool('curl',"""import json,sys
+if sys.argv[-1].endswith('/token'):
+    data=sys.stdin.read();assert 'grant_type=' in data
+    print(json.dumps(dict(access_token='fixture-access',refresh_token='fixture-refresh',expires_in=7200)))
+elif sys.argv[-1].endswith('/users/me'):print(json.dumps({'data':{'id':'42','username':'fixture'}}))
+else:print(json.dumps({'data':{'id':'123'}}))
+""")
+        result=self.rpc('x-connect',client_id='fixture-client')
+        self.assertEqual(result['username'],'fixture')
+        self.assertNotIn('access_token',result)
+        bundle=json.loads(secret.read_text());bundle['expires_at']=0;secret.write_text(json.dumps(bundle))
+        self.rpc('x-draft',**self.args)
+        self.assertGreater(json.loads(secret.read_text())['expires_at'],0)
+        self.assertEqual(self.rpc('x-disconnect')['connected'],False)
+        self.rpc('x-status',expect=False)
+
+    def test_outbox_chunks_reassemble_unicode_without_truncation(self):
+        story=self.pub/self.args['article'];story.write_text(story.read_text()+'\n'+('🌍 '*60000)+'\n')
+        self.args['expected_source_hash']=self.rpc('inspect')['source_hash']
+        id=self.rpc('substack-prepare',**self.args)['outbox_id']
+        import base64,hashlib
+        chunks=[];offset=0
+        while True:
+            part=self.native('read',id=id,offset=offset);chunks.append(base64.b64decode(part['data']));offset=part['next']
+            if offset==part['total']:break
+        self.assertGreater(len(chunks),1)
+        data=b''.join(chunks);self.assertEqual(hashlib.sha256(data).hexdigest(),part['hash'])
+        self.assertIn('🌍 '*100,json.loads(data)['html'])
+    def test_x_draft_cannot_be_published_with_another_account(self):
+        self.rpc('x-draft',**self.args)
+        self.tool('secret-tool',"print('another-user-token')")
+        self.assertIn('different or legacy connection',self.rpc('x-publish',expect=False,**self.args))
+        self.assertEqual(len(self.routes()),1)
+
+    def test_native_origin_is_restricted(self):
+        result=subprocess.run([str(ENGINE),'native-message','chrome-extension://untrusted/'],input=b'',capture_output=True,env=self.env,timeout=10)
+        self.assertNotEqual(result.returncode,0)
+        self.assertEqual(result.stdout,b'')
+
     def routes(self):return self.calls.read_text().splitlines() if self.calls.exists() else []
     def test_prepare_publish_and_repeat_never_duplicate(self):
         p=self.rpc('x-draft',**self.args);self.assertEqual(p['targets'][1]['status'],'draft')

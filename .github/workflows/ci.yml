@@ -21,6 +21,8 @@ jobs:
       - run: cargo test --workspace --locked
       - run: cargo build --workspace --locked
       - run: python3 tests/distribution.py
+      - run: node --check companion/popup.js && node --check companion/editor.js
+      - run: python3 -m py_compile scripts/install-companion.py
       - run: python3 tests/deployment.py
       - run: python3 tests/preview_http.py
       - run: cargo build --release --locked
@@ -44,12 +46,14 @@ jobs:
         run: |
           xvfb-run -a build/desktop/pressroom-desktop --publication "$PWD/fixtures/fixing-everything" --smoke
           xvfb-run -a build/desktop/pressroom-desktop --clipboard-smoke
+          xvfb-run -a build/desktop/pressroom-desktop --dialogs-smoke
       - run: python3 scripts/package.py
       - name: Install bundle and verify both binaries
         run: |
           bundle=$(find dist -mindepth 1 -maxdepth 1 -type d -name 'pressroom-*' -print -quit)
           sh "$bundle/install.sh" "$RUNNER_TEMP/pressroom-installed"
           "$RUNNER_TEMP/pressroom-installed/bin/pressroom" --version
+          python3 tests/installed_companion.py "$RUNNER_TEMP/pressroom-installed"
           QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software "$RUNNER_TEMP/pressroom-installed/bin/pressroom-desktop" --smoke
       - uses: actions/upload-artifact@v4
         with:

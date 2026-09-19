@@ -188,7 +188,11 @@ impl Builder {
     }
 }
 pub fn token() -> Result<String> {
-    let value = crate::connections::access_token()?;
+    Ok(credentials()?.0)
+}
+pub fn credentials() -> Result<(String, String)> {
+    let bundle = crate::connections::credentials()?;
+    let value = bundle["access_token"].as_str().context("Reconnect X")?;
     let value = value.trim().to_string();
     ensure!(
         !value.is_empty()
@@ -198,7 +202,11 @@ pub fn token() -> Result<String> {
                 .all(|b| b.is_ascii_graphic() && b != b'\"' && b != b'\\'),
         "No valid X OAuth token in Secret Service"
     );
-    Ok(value)
+    let account = bundle["user_id"]
+        .as_str()
+        .map(str::to_owned)
+        .unwrap_or_else(|| format!("legacy-{}", crate::storage::hash(value.as_bytes())));
+    Ok((value, account))
 }
 pub fn request(token: &str, path: &str, body: &Value) -> Result<Value> {
     ensure!(

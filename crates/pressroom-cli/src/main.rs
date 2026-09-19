@@ -83,9 +83,14 @@ enum Command {
     },
     /// Execute one versioned JSON request from stdin. All editor and agent operations use this protocol.
     Rpc,
+    /// Restricted browser companion protocol; no general RPC or credentials.
+    NativeMessage {
+        origin: String,
+    },
 }
 fn execute(command: Command) -> Result<Value> {
     let (path, command, args) = match command {
+        Command::NativeMessage { .. } => unreachable!(),
         Command::Rpc => {
             let mut input = String::new();
             io::stdin()
@@ -181,6 +186,12 @@ fn execute(command: Command) -> Result<Value> {
 }
 fn main() {
     let cli = Cli::parse();
+    if let Command::NativeMessage { origin } = &cli.command {
+        if pressroom_core::substack::native(origin).is_err() {
+            std::process::exit(1);
+        }
+        return;
+    }
     let silent = matches!(&cli.command,Command::ExportX{format,..}if format!="json");
     let response = protocol::response(execute(cli.command));
     let valid = response

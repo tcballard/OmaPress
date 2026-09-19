@@ -32,6 +32,7 @@ fn store(value: &Value) -> Result<()> {
     Ok(())
 }
 pub fn disconnect() -> Result<Value> {
+    let _lock = crate::storage::lock(&crate::substack::directory()?)?;
     secret("clear", &[])?;
     Ok(json!({"connected":false}))
 }
@@ -79,7 +80,8 @@ fn exchange(fields: &[(&str, &str)]) -> Result<Value> {
         json!(chrono::Utc::now().timestamp() + v["expires_in"].as_i64().unwrap_or(7200));
     Ok(v)
 }
-pub fn access_token() -> Result<String> {
+pub fn credentials() -> Result<Value> {
+    let _lock = crate::storage::lock(&crate::substack::directory()?)?;
     let mut v = read()?;
     if v["expires_at"]
         .as_i64()
@@ -104,10 +106,7 @@ pub fn access_token() -> Result<String> {
         store(&new)?;
         v = new;
     }
-    Ok(v["access_token"]
-        .as_str()
-        .context("Reconnect X")?
-        .to_owned())
+    Ok(v)
 }
 fn base64url(bytes: &[u8]) -> String {
     const TABLE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -156,12 +155,9 @@ fn callback(request: &str, state: &str) -> Result<String> {
     unique("code")
 }
 pub fn connect(client: &str) -> Result<Value> {
+    let _lock = crate::storage::lock(&crate::substack::directory()?)?;
     ensure!(
-        !client.is_empty()
-            && client.len() < 1024
-            && client
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b"-_".contains(&b)),
+        !client.is_empty() && client.len() < 1024 && client.bytes().all(|b| b.is_ascii_graphic()),
         "Enter a valid public Native App client ID"
     );
     let listener = TcpListener::bind("127.0.0.1:39123")

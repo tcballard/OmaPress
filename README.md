@@ -11,11 +11,11 @@ Pressroom is a native publishing application for Omarchy. It turns Markdown and 
 - **Your archive:** stable article URLs and feed identities survive corrections.
 - **Your recovery:** interrupted deployments can be rechecked and verified versions can be republished.
 
-The desktop uses C++ and Qt 6/QML. The Rust CLI is independently useful. No account or network connection is required for writing, building or local preview. GitHub Pages is the first deployment target; authentication stays with `gh`. The publishing panel tracks website, X and Substack separately. X has an experimental text-only API adapter; rich X articles and Substack currently use assisted copy/publish. **One-click publication to all three is not complete.** See [distribution status and connections](docs/distribution.md).
+The desktop uses C++ and Qt 6/QML. The Rust CLI is independently useful. No account or network connection is required for writing, building or local preview. GitHub Pages is the first deployment target; authentication stays with `gh`. The publishing panel tracks website, X and Substack separately. X has browser sign-in, keyring token refresh, and an experimental rich-content API adapter with cover/body image upload. Substack has a local outbox and optional browser companion that fills a blank draft. **Substack still requires its final audience/email review and Publish action in the browser.** See [distribution status and connections](docs/distribution.md) and [Substack companion setup](docs/substack-companion.md).
 
 ## Build and run
 
-On Omarchy/Arch, install `base-devel cmake qt6-base qt6-declarative qt6-wayland git github-cli curl` and Rust using the pinned toolchain.
+On Omarchy/Arch, install `base-devel cmake qt6-base qt6-declarative qt6-wayland git github-cli curl libsecret xdg-utils` and Rust using the pinned toolchain.
 
 ```sh
 cargo build --release --locked

@@ -61,6 +61,8 @@ ApplicationWindow {
         if (hasArticle) backend.request("distribution-plan",{article:articlePath,expected_source_hash:sourceHash},"distribution")
         else { rollbackId="";backend.request("publish-plan",{expected_source_hash:sourceHash},"plan") }
     }) }
+    function smokeConnections() { connectionsDialog.open() }
+    function smokeDistribution() { connectionsDialog.close(); distributionDialog.open() }
     function distributionArgs() { return {article:distribution.article,expected_source_hash:distribution.source_hash} }
     function setDocument(value) {
         loading = true; articlePath = value.article.path; meta = value.article.meta; editor.text = value.article.body;
@@ -100,10 +102,11 @@ ApplicationWindow {
             else if(tag==="media") {sourceHash=v.source_hash;setMeta("header_image",v.media_path);say("Image imported into this publication.")}
             else if(tag==="settings-save") {publication=v;sourceHash=v.source_hash;settingsDialog.close();say("Publication settings saved.")}
             else if(tag==="x-status"||tag==="x-connect"||tag==="x-disconnect") {xConnection=v;say(v.connected?"X account connected.":"X disconnected.")}
+            else if(tag==="substack-prepare") {say(v.message);backend.request("distribution-plan",distributionArgs(),"x-action")}
             else if(tag==="distribution-review") {distributionReview=v;batchConfirm.open()}
             else if(tag==="distribution-publish") {distribution=v.distribution;var errors=v.results.filter(function(r){return !!r.error});say(errors.length?errors.map(function(r){return r.target+": "+r.error}).join("\n"):"Publishing finished. Check the recorded destination results.",errors.length>0);backend.request("inspect",{},"refresh")}
             else if(tag==="distribution") {distribution=v;distributionDialog.open()}
-            else if(tag==="x-action"||tag==="confirm-destination") {distribution=v;say(tag==="x-action"?"X result recorded. Review its destination status.":"Published URL recorded as confirmed by you.")}
+            else if(tag==="x-action"||tag==="confirm-destination") {distribution=v;say(tag==="x-action"?"Destination status refreshed.":"Published URL recorded as confirmed by you.")}
             else if(tag==="plan") {publishPlan=v;publishDialog.open()}
             else if(tag==="publish"||tag==="recheck"||tag==="rollback") {say(v.status==="published"?"Publication verified and live.":(v.message||"Deployment needs a recheck."),v.status!=="published");backend.request("inspect",{},"refresh");if(distributionDialog.visible)backend.request("distribution-plan",distributionArgs(),"x-action")}
             else if(tag==="github")say("Signed in to GitHub as "+v.login+".")
@@ -300,7 +303,7 @@ ApplicationWindow {
         }
     }
 
-    Dialog {id:connectionsDialog;title:"Connections";modal:true;anchors.centerIn:parent;width:600;standardButtons:Dialog.Close
+    Dialog {id:connectionsDialog;objectName:"connectionsDialog";title:"Connections";modal:true;anchors.centerIn:parent;width:600;standardButtons:Dialog.Close
         ColumnLayout {anchors.fill:parent;spacing:12
             Label {text:"X Articles";font.pixelSize:22;font.bold:true}
             Label {text:"Sign in with a public Native App client ID from the X developer console. Register this exact callback URL:";wrapMode:Text.Wrap;Layout.fillWidth:true}
@@ -312,10 +315,10 @@ ApplicationWindow {
                 Button {text:"Check status";enabled:!backend.busy;onClicked:backend.request("x-status")}
                 Button {text:"Disconnect";enabled:!backend.busy;onClicked:backend.request("x-disconnect")}
             }
-            Label {text:"Website: use publication setup to connect your GitHub repository. Substack uses your browser session; Pressroom never requests its password.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+            Label {text:"Website: use publication setup to connect your GitHub repository. Substack uses your browser session. Install the bundled companion using install-companion.py, then load the companion folder in your browser’s extension manager. See docs/substack-companion.md.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
         }
     }
-    Dialog {id:distributionDialog;title:"Publish article";modal:true;anchors.centerIn:parent;width:760;height:Math.min(win.height-60,800);standardButtons:Dialog.Close
+    Dialog {id:distributionDialog;objectName:"distributionDialog";title:"Publish article";modal:true;anchors.centerIn:parent;width:760;height:Math.min(win.height-60,800);standardButtons:Dialog.Close
         ScrollView {anchors.fill:parent;clip:true
             ColumnLayout {width:distributionDialog.availableWidth-24;spacing:14
                 Label {text:distribution.title||"";font.pixelSize:24;font.bold:true;wrapMode:Text.Wrap;Layout.fillWidth:true}
@@ -330,8 +333,9 @@ ApplicationWindow {
                 }}
                 RowLayout {
                     CheckBox {id:batchWebsite;text:"Website";checked:true}
+                    CheckBox {id:batchSubstack;text:"Substack draft"}
                     CheckBox {id:batchX;text:"X Articles";enabled:!!distribution.x_api_supported}
-                    Button {text:"Review selected destinations…";enabled:distribution.ready&&!backend.busy&&(batchWebsite.checked||(batchX.checked&&batchX.enabled));onClicked:{var a=distributionArgs();a.website=batchWebsite.checked;a.x=batchX.checked&&batchX.enabled;backend.request("distribution-review",a,"distribution-review")}}
+                    Button {text:"Review selected destinations…";enabled:distribution.ready&&!backend.busy&&(batchWebsite.checked||batchSubstack.checked||(batchX.checked&&batchX.enabled));onClicked:{var a=distributionArgs();a.substack=batchSubstack.checked;a.website=batchWebsite.checked;a.x=batchX.checked&&batchX.enabled;backend.request("distribution-review",a,"distribution-review")}}
                 }
                 Label {text:distribution.website_scope||"";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
                 Button {text:"Review website deployment…";enabled:distribution.ready&&!backend.busy;onClicked:{rollbackId="";backend.request("publish-plan",{expected_source_hash:distribution.source_hash},"plan")}}
@@ -343,8 +347,9 @@ ApplicationWindow {
                     Button {text:"Copy rich article";enabled:!!distribution.x;onClicked:{backend.copyArticle(distribution.x.html,distribution.x.text);say("Rich article copied. Upload artwork separately in X.")}}
                 }
                 Button {text:"Open X Articles";onClicked:backend.openUrl("https://x.com/compose/articles")}
-                Label {text:"Substack · assisted publishing";font.bold:true}
-                Label {text:"Copy the article into Substack, upload artwork, then review the audience and email delivery there. Automatic Substack publishing is not enabled.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                Label {text:"Substack · browser companion";font.bold:true}
+                Label {text:"Prepare the saved article and artwork, then use the Pressroom companion to fill a blank Substack draft. Review the audience and email delivery in Substack before publishing.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                Button {text:"Prepare Substack draft";enabled:distribution.ready&&!backend.busy;onClicked:backend.request("substack-prepare",distributionArgs())}
                 RowLayout {
                     Button {text:"Copy title";onClicked:backend.copyText(distribution.substack.title)}
                     Button {text:"Copy subtitle";onClicked:backend.copyText(distribution.substack.subtitle)}
@@ -363,10 +368,10 @@ ApplicationWindow {
     Dialog {id:batchConfirm;title:"Publish selected destinations?";modal:true;anchors.centerIn:parent;width:600;standardButtons:Dialog.Cancel
         ColumnLayout {width:parent.width;spacing:12
             Label {text:distributionReview.title||"";font.bold:true;wrapMode:Text.Wrap;Layout.fillWidth:true}
-            Label {text:"Publish to: "+(distributionReview.website?"Website ":"")+(distributionReview.x?"X Articles":"");wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Label {text:"Publish to: "+(distributionReview.website?"Website ":"")+(distributionReview.x?"X Articles ":"")+(distributionReview.substack?"Prepare Substack draft":"");wrapMode:Text.Wrap;Layout.fillWidth:true}
             Label {visible:!!distributionReview.website;text:"Website repository: "+(distributionReview.site?distributionReview.site.repository:"")+"\nAll Ready/Published articles are included in the website deployment.";wrapMode:Text.Wrap;Layout.fillWidth:true}
-            Label {text:"Substack remains assisted. If one destination fails, successful destinations remain published.";wrapMode:Text.Wrap;Layout.fillWidth:true}
-            Button {text:"Publish reviewed version";enabled:!backend.busy;onClicked:{var r=distributionReview;backend.request("distribution-publish",{article:r.article,expected_source_hash:r.source_hash,website:r.website,x:r.x,expected_remote_head:r.site?r.site.expected_remote_head:""},"distribution-publish");batchConfirm.close()}}
+            Label {text:"Substack preparation adds this version to your local browser outbox. Final publishing happens in Substack. If one destination fails, other results are retained.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Button {text:"Publish reviewed version";enabled:!backend.busy;onClicked:{var r=distributionReview;backend.request("distribution-publish",{article:r.article,expected_source_hash:r.source_hash,website:r.website,x:r.x,substack:r.substack,expected_remote_head:r.site?r.site.expected_remote_head:""},"distribution-publish");batchConfirm.close()}}
         }
     }
     Dialog {id:xConfirm;title:"Publish on X?";modal:true;anchors.centerIn:parent;width:500;standardButtons:Dialog.Cancel

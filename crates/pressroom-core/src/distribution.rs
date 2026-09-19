@@ -12,6 +12,8 @@ pub struct Receipt {
     pub url: String,
     pub remote_id: String,
     pub updated_at: String,
+    #[serde(default)]
+    pub account_id: String,
 }
 #[derive(Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -137,6 +139,7 @@ pub fn confirm(root: &Path, path: &str, expected: &str, target: &str, url: &str)
             url: url.into(),
             remote_id: String::new(),
             updated_at: chrono::Utc::now().to_rfc3339(),
+            account_id: String::new(),
         },
     );
     save(root, &l)?;
@@ -176,13 +179,20 @@ pub fn x_action(root: &Path, path: &str, expected: &str, publish: bool) -> Resul
             return plan(root, path, expected);
         }
     }
-    let token = crate::x_article::token()?;
+    let (token, account) = crate::x_article::credentials()?;
+    if let Some(r) = &previous {
+        ensure!(
+            r.account_id == account,
+            "The X draft belongs to a different or legacy connection. Verify it in X before proceeding."
+        );
+    }
     let mut r = previous.unwrap_or(Receipt {
         article_hash: a.hash.clone(),
         status: String::new(),
         url: String::new(),
         remote_id: String::new(),
         updated_at: String::new(),
+        account_id: account.clone(),
     });
     if r.remote_id.is_empty() {
         crate::x_article::upload_media(&s, &token, &mut payload)?;
@@ -239,8 +249,15 @@ pub fn x_action(root: &Path, path: &str, expected: &str, publish: bool) -> Resul
 }
 
 /// Prepare the website remote head and selected destinations for one explicit review.
-pub fn review(root: &Path, path: &str, expected: &str, website: bool, x: bool) -> Result<Value> {
-    ensure!(website || x, "Select at least one automatic destination");
+pub fn review(
+    root: &Path,
+    path: &str,
+    expected: &str,
+    website: bool,
+    x: bool,
+    substack: bool,
+) -> Result<Value> {
+    ensure!(website || x || substack, "Select at least one destination");
     let p = plan(root, path, expected)?;
     ensure!(
         p["ready"] == true,
@@ -258,7 +275,7 @@ pub fn review(root: &Path, path: &str, expected: &str, website: bool, x: bool) -
         Value::Null
     };
     Ok(
-        json!({"article":path,"source_hash":expected,"title":p["title"],"website":website,"x":x,"site":site}),
+        json!({"article":path,"source_hash":expected,"title":p["title"],"website":website,"x":x,"substack":substack,"site":site}),
     )
 }
 /// Partial success remains visible. Each adapter protects its own durable state.
@@ -269,8 +286,9 @@ pub fn publish_selected(
     website: bool,
     x: bool,
     remote_head: &str,
+    substack: bool,
 ) -> Result<Value> {
-    ensure!(website || x, "Select at least one automatic destination");
+    ensure!(website || x || substack, "Select at least one destination");
     let p = plan(root, path, expected)?;
     ensure!(p["ready"] == true, "Reviewed article is not ready");
     if x {
@@ -281,6 +299,13 @@ pub fn publish_selected(
         crate::x_article::token()?;
     }
     let mut results = Vec::new();
+    if substack {
+        let result = crate::substack::prepare(root, path, expected);
+        results.push(match result {
+            Ok(v) => json!({"target":"substack","result":v}),
+            Err(e) => json!({"target":"substack","error":format!("{e:#}")}),
+        });
+    }
     if website {
         let result = crate::deploy::publish(root, expected, remote_head);
         results.push(match result {
@@ -296,4 +321,28 @@ pub fn publish_selected(
         });
     }
     Ok(json!({"results":results,"distribution":plan(root,path,expected)?}))
+}
+
+/// Caller holds the publication lock; local preparation never implies publication.
+pub(crate) fn substack_prepared(root: &Path, a: &Article, id: &str) -> Result<()> {
+    let mut ledger = load(root)?;
+    let entries = ledger.entries.entry(a.meta.id.to_string()).or_default();
+    if let Some(previous) = entries.get("substack") {
+        ensure!(
+            previous.status == "awaiting_browser",
+            "A Substack URL is already recorded. Edit the existing post to avoid a duplicate."
+        );
+    }
+    entries.insert(
+        "substack".into(),
+        Receipt {
+            article_hash: a.hash.clone(),
+            status: "awaiting_browser".into(),
+            url: String::new(),
+            remote_id: id.into(),
+            updated_at: chrono::Utc::now().to_rfc3339(),
+            account_id: String::new(),
+        },
+    );
+    save(root, &ledger)
 }

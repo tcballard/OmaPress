@@ -16,13 +16,13 @@
 
 Bridge::Bridge(QObject *parent):QObject(parent) {
     m_deadline.setSingleShot(true);
-    connect(&m_deadline,&QTimer::timeout,this,[this]{ if(m_active){emit failed(m_current.tag,"The operation timed out. Saved drafts remain intact. Recheck any pending deployment before retrying.");m_active->kill();} });
+    connect(&m_deadline,&QTimer::timeout,this,[this]{ if(m_active){if(m_current.generation==m_generation)emit failed(m_current.tag,"The operation timed out. Saved drafts remain intact. Recheck any pending deployment before retrying.");m_active->kill();} });
     connect(&m_themeWatcher,&QFileSystemWatcher::fileChanged,this,[this]{loadTheme();});
     connect(&m_themeWatcher,&QFileSystemWatcher::directoryChanged,this,[this]{loadTheme();});
     loadTheme();
 }
 Bridge::~Bridge(){if(m_active){m_active->kill();m_active->waitForFinished(1000);}stopPreview();}
-void Bridge::setPublicationPath(const QString &path){if(path==m_path)return;stopPreview();++m_generation;m_queue.clear();m_path=path;emit publicationPathChanged();}
+void Bridge::setPublicationPath(const QString &path){if(path==m_path)return;stopPreview();++m_generation;m_queue.clear();m_path=path;emit publicationPathChanged();emit busyChanged();}
 QString Bridge::localPath(const QUrl &url)const{return url.toLocalFile();}
 QString Bridge::lastPublication()const{const auto args=QCoreApplication::arguments();const int index=args.indexOf("--publication");if(index>=0&&index+1<args.size())return args.at(index+1);auto last=QSettings().value("lastPublication").toString();if(last.isEmpty())last=QSettings("OmaPress","OmaPress").value("lastPublication").toString();return last;}
 QString Bridge::cliPath()const{auto override=qEnvironmentVariable("PRESSROOM_CLI");if(override.isEmpty())override=qEnvironmentVariable("OMAPRESS_CLI");if(!override.isEmpty())return override;const QString sibling=QCoreApplication::applicationDirPath()+"/pressroom";if(QFile::exists(sibling))return sibling;return QStandardPaths::findExecutable("pressroom");}
@@ -39,7 +39,7 @@ void Bridge::next(){
     m_active=new QProcess(this);m_active->setProgram(cliPath());m_active->setArguments({"rpc"});
     connect(m_active,&QProcess::readyReadStandardOutput,this,[this]{m_stdout+=m_active->readAllStandardOutput();if(m_stdout.size()>32*1024*1024)m_active->kill();});
     connect(m_active,&QProcess::readyReadStandardError,this,[this]{m_stderr+=m_active->readAllStandardError();if(m_stderr.size()>1024*1024)m_active->kill();});
-    connect(m_active,&QProcess::errorOccurred,this,[this](QProcess::ProcessError e){if(e==QProcess::FailedToStart){emit failed(m_current.tag,m_active->errorString());m_active->deleteLater();m_active=nullptr;m_deadline.stop();emit busyChanged();QTimer::singleShot(0,this,&Bridge::next);}});
+    connect(m_active,&QProcess::errorOccurred,this,[this](QProcess::ProcessError e){if(e==QProcess::FailedToStart){if(m_current.generation==m_generation)emit failed(m_current.tag,m_active->errorString());m_active->deleteLater();m_active=nullptr;m_deadline.stop();emit busyChanged();QTimer::singleShot(0,this,&Bridge::next);}});
     connect(m_active,qOverload<int,QProcess::ExitStatus>(&QProcess::finished),this,[this]{finish();});
     connect(m_active,&QProcess::started,this,[this]{QJsonObject input{{"schema",1},{"command",m_current.command},{"path",m_current.path},{"args",QJsonObject::fromVariantMap(m_current.args)}};m_active->write(QJsonDocument(input).toJson(QJsonDocument::Compact));m_active->closeWriteChannel();});
     const bool network=QStringList{"publish","rollback","recheck","publish-plan","setup","repositories","github-status","x-connect","x-status","x-disconnect","x-draft","x-publish","distribution-review","distribution-publish"}.contains(m_current.command);

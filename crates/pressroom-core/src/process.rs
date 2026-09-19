@@ -38,6 +38,20 @@ pub fn run_input(
     if let Some(cwd) = cwd {
         command.current_dir(cwd);
     }
+    // The engine may be terminated by its desktop owner. Never leave curl/git running.
+    // SAFETY: pre_exec uses only async-signal-safe libc operations, without allocation.
+    let parent = unsafe { libc::getpid() };
+    unsafe {
+        command.pre_exec(move || {
+            if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            if libc::getppid() != parent {
+                libc::_exit(1);
+            }
+            Ok(())
+        });
+    }
     let mut child = command
         .spawn()
         .with_context(|| format!("Cannot start {program}"))?;
@@ -74,13 +88,16 @@ pub fn run_input(
         }
         thread::sleep(Duration::from_millis(10));
     }
-    // SAFETY: our unreaped leader still pins this process-group ID.
-    unsafe {
-        libc::kill(-pid, libc::SIGTERM);
-    }
-    thread::sleep(Duration::from_millis(30));
-    unsafe {
-        libc::kill(-pid, libc::SIGKILL);
+    // A browser deliberately outlives its successful opener. Other descendants are owned work.
+    if timed_out || program != "xdg-open" {
+        // SAFETY: our unreaped leader still pins this process-group ID.
+        unsafe {
+            libc::kill(-pid, libc::SIGTERM);
+        }
+        thread::sleep(Duration::from_millis(30));
+        unsafe {
+            libc::kill(-pid, libc::SIGKILL);
+        }
     }
     let status = child.wait()?;
     fn read(mut f: File) -> Result<String> {
