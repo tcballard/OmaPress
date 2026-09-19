@@ -1,29 +1,39 @@
+# Maintainer: Tom Ballard (tcballard)
 pkgname=pressroom
-pkgver=0.1.0
+pkgver=0.1.0rc1.r20260919
+_commit=6738df25df0ee11f0916c73bfc7de105010cb099
 pkgrel=1
 pkgdesc='Native local-first publishing for Omarchy'
 arch=('x86_64')
 url='https://github.com/tcballard/OmaPress'
 license=('MIT')
-depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl' 'libsecret' 'xdg-utils')
+depends=('glibc' 'libgcc' 'libstdc++' 'bash' 'hicolor-icon-theme' 'qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl' 'libsecret' 'xdg-utils')
 optdepends=('python: register the optional Substack browser companion' 'chromium: optional Substack browser companion')
 conflicts=('omapress')
 replaces=('omapress')
+options=('!debug')
 makedepends=('rust' 'cmake')
-source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP') # Replace with the release archive SHA-256 before distribution.
+checkdepends=('python' 'desktop-file-utils')
+# Development snapshot: immutable source, not an upstream stable release.
+source=("$pkgname-$_commit.tar.gz::https://codeload.github.com/tcballard/OmaPress/tar.gz/$_commit")
+sha256sums=('5cc435bcc8714b806d9403975eaf142dfc765d7b3907fd9bd9ced26d2f345aa7')
 build() {
-  cd "OmaPress-$pkgver"
+  cd "OmaPress-$_commit"
   cargo build --release --locked
-  cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_RPATH=ON
   cmake --build build/desktop --parallel 2
 }
 check() {
-  cd "OmaPress-$pkgver"
+  cd "OmaPress-$_commit"
   cargo test --workspace --locked
+  cargo build --workspace --locked
+  python tests/distribution.py
+  python tests/deployment.py
+  python tests/preview_http.py
+  desktop-file-validate desktop/resources/pressroom.desktop
 }
 package() {
-  cd "OmaPress-$pkgver"
+  cd "OmaPress-$_commit"
   DESTDIR="$pkgdir" cmake --install build/desktop
   install -Dm755 target/release/pressroom "$pkgdir/usr/bin/pressroom"
   install -Dm755 scripts/pressroom-companion "$pkgdir/usr/bin/pressroom-companion"

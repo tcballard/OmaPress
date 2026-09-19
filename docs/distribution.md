@@ -53,7 +53,8 @@ entries. It cannot invoke arbitrary engine commands or read credentials.
 Live account authentication/publishing, Substack editor acceptance, and one real
 article across all destinations remain unrun. Real Omarchy launcher/theme/keyboard
 and Arch install/upgrade/removal acceptance also remain required. The Arch recipe
-still needs a versioned release source and checksum before App Store submission.
+now pins an immutable development source and checksum; stable release and real
+Omarchy acceptance still gate App Store submission.
 No release or App Store submission is claimed by this development stack.
 
 ## Native X sign-in (stack layer 1)
