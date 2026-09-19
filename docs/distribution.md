@@ -58,3 +58,22 @@ All requests use `pressroom rpc` with schema 1, publication `path` and `args`:
 2. Inspect the authenticated Substack editor; implement its draft and publish adapter against observed controls, including explicit email delivery choice and remote receipt recovery.
 3. Complete one real article end to end across all three destinations and verify content/images in each.
 4. Run real Omarchy launcher/theme/keyboard acceptance, then clean Arch packaging and App Store submission.
+
+## Native X sign-in (stack layer 1)
+
+Open **Connections**, enter the client ID of your X developer **Native App**
+(public client, no client secret), and choose **Connect X**. Register exactly
+`http://127.0.0.1:39123/callback` in the developer console. Sign-in requests
+`tweet.read tweet.write users.read offline.access media.write`. X account/plan
+access to Articles is still required; connecting does not prove that entitlement.
+
+The engine uses PKCE S256, a random state, a loopback-only callback, and a
+three-minute deadline. It verifies the account using `/2/users/me` before storing
+the token bundle in Secret Service. Refresh happens before an expiring token is
+used. Disconnect removes the local credential; revoke application access in X
+settings to revoke it at the provider. No password, token, or client secret goes
+in a publication. `curl`, `xdg-open`, and `secret-tool` are runtime dependencies.
+
+References: [X OAuth public-client flow](https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code).
+Live X sign-in and account entitlement checks remain acceptance work on an
+Omarchy desktop with the author's developer app.

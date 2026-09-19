@@ -44,11 +44,12 @@ signals:
     void arrayResult(const QString &tag,const QVariantList &value);
     void failed(const QString &tag,const QString &error);
 private:
-    struct Job { QString command,path,tag; QVariantMap args; };
+    struct Job { QString command,path,tag; QVariantMap args; quint64 generation; };
     void next();
     void finish();
     void loadTheme();
     QString m_path,m_accent="#a7c58b",m_background="#181c19",m_foreground="#edf0e8",m_previewUrl;
+    quint64 m_generation=0;
     QQueue<Job> m_queue;
     Job m_current;
     QProcess *m_active=nullptr;

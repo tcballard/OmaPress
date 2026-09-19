@@ -34,6 +34,7 @@ ApplicationWindow {
     property string rendered: ""
     property var exportData: ({html:"",text:"",caption:"",warnings:[]})
     property var publishPlan: ({})
+    property var xConnection: ({})
     property var distribution: ({})
     property var distributionReview: ({})
     property var recovery: ({})
@@ -98,6 +99,7 @@ ApplicationWindow {
             else if(tag==="build") {say("Site and feeds built. Preview the exact site before publishing.");backend.startPreview(false)}
             else if(tag==="media") {sourceHash=v.source_hash;setMeta("header_image",v.media_path);say("Image imported into this publication.")}
             else if(tag==="settings-save") {publication=v;sourceHash=v.source_hash;settingsDialog.close();say("Publication settings saved.")}
+            else if(tag==="x-status"||tag==="x-connect"||tag==="x-disconnect") {xConnection=v;say(v.connected?"X account connected.":"X disconnected.")}
             else if(tag==="distribution-review") {distributionReview=v;batchConfirm.open()}
             else if(tag==="distribution-publish") {distribution=v.distribution;var errors=v.results.filter(function(r){return !!r.error});say(errors.length?errors.map(function(r){return r.target+": "+r.error}).join("\n"):"Publishing finished. Check the recorded destination results.",errors.length>0);backend.request("inspect",{},"refresh")}
             else if(tag==="distribution") {distribution=v;distributionDialog.open()}
@@ -117,6 +119,7 @@ ApplicationWindow {
             Label { text:"Pressroom";font.pixelSize:20;font.bold:true;Layout.leftMargin:8 }
             Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.65 }
             BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
+            Button { text:"Connections…";onClicked:connectionsDialog.open() }
             Button { text:"Save";enabled:hasArticle&&dirty;onClicked:save();Accessible.name:"Save article locally" }
             Button { text:"Preview site";enabled:opened;onClicked:guarded(function(){backend.startPreview(true)});ToolTip.text:"Open a private local preview, including drafts";ToolTip.visible:hovered }
             Button { text:"Publish…";highlighted:true;enabled:opened&&!backend.busy;onClicked:requestPublish() }
@@ -297,6 +300,21 @@ ApplicationWindow {
         }
     }
 
+    Dialog {id:connectionsDialog;title:"Connections";modal:true;anchors.centerIn:parent;width:600;standardButtons:Dialog.Close
+        ColumnLayout {anchors.fill:parent;spacing:12
+            Label {text:"X Articles";font.pixelSize:22;font.bold:true}
+            Label {text:"Sign in with a public Native App client ID from the X developer console. Register this exact callback URL:";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            TextField {text:"http://127.0.0.1:39123/callback";readOnly:true;Layout.fillWidth:true;Accessible.name:"X callback URL"}
+            TextField {id:xClientId;placeholderText:"X public client ID";Layout.fillWidth:true;Accessible.name:"X public client ID"}
+            Label {text:backend.busy?"Waiting for the current operation. Browser sign-in expires after three minutes.":(xConnection.connected?"Connected. Credentials are stored in your desktop keyring.":"Check connection status or sign in.");wrapMode:Text.Wrap;Layout.fillWidth:true}
+            RowLayout {
+                Button {text:"Connect X";enabled:!backend.busy&&xClientId.text.length>0;onClicked:backend.request("x-connect",{client_id:xClientId.text})}
+                Button {text:"Check status";enabled:!backend.busy;onClicked:backend.request("x-status")}
+                Button {text:"Disconnect";enabled:!backend.busy;onClicked:backend.request("x-disconnect")}
+            }
+            Label {text:"Website: use publication setup to connect your GitHub repository. Substack uses your browser session; Pressroom never requests its password.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+        }
+    }
     Dialog {id:distributionDialog;title:"Publish article";modal:true;anchors.centerIn:parent;width:760;height:Math.min(win.height-60,800);standardButtons:Dialog.Close
         ScrollView {anchors.fill:parent;clip:true
             ColumnLayout {width:distributionDialog.availableWidth-24;spacing:14
@@ -338,7 +356,7 @@ ApplicationWindow {
                 ComboBox {id:receiptTarget;model:["x","substack"];Accessible.name:"Published destination"}
                 TextField {id:receiptUrl;placeholderText:"https://… published article URL";Layout.fillWidth:true;Accessible.name:"Published article URL"}
                 Button {text:"Record published URL";enabled:receiptUrl.text!==""&&!backend.busy;onClicked:{var a=distributionArgs();a.target=receiptTarget.currentText;a.url=receiptUrl.text;backend.request("distribution-confirm",a,"confirm-destination")}}
-                Label {text:"X connection: store a user OAuth access token with Secret Service. See docs/distribution.md. Tokens are never saved in publication files.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.6}
+                Label {text:"Use Connections to sign in to X. Tokens remain in your desktop keyring.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.6}
             }
         }
     }
