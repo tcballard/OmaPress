@@ -15,7 +15,7 @@ Historical verification remains in `verification.md` unchanged and applies to it
 - Platform: Linux development container, not a real Omarchy/Hyprland session.
 - Native dependency installation attempt failed because the container could not switch apt's service user; no native desktop execution is claimed from that attempt.
 - X account/token was unavailable. Opening Substack publishing in the supported browser returned HTTP 502 / connection refused, so its editor could not be inspected. No live articles were published.
-- Arch recipe is a development recipe: release source digest remains unfinished. It is not ready for repository submission.
+- Arch recipe now pins the complete PR #5 source commit with a measured archive checksum; the final packaging PR adds unsigned Arch build/install/remove CI. It remains a development snapshot, not a stable release.
 
 ## Compatibility
 
@@ -23,7 +23,7 @@ Working product name: Pressroom. Existing publication schema and `.omapress/` st
 
 ## PR stack
 
-The stack follows #2 foundation → #3 OAuth connections → #4 rich X content → the Substack workflow PR. Each PR targets the previous branch so its diff is reviewable independently. Build Omarchy Plugins was refreshed from `26ee1e7fc57e4089daea57ff0c51e6a10659e401` (v0.4.0). Its design/test guidance explicitly routes external application state outside the hosted shell. No shell-plugin manifest or shell-hosted QML was added to this standalone application.
+The stack follows #2 foundation → #3 OAuth connections → #4 rich X content → #5 Substack workflow → the pinned-source packaging PR. Each PR targets the previous branch so its diff is reviewable independently. Build Omarchy Plugins was refreshed from `26ee1e7fc57e4089daea57ff0c51e6a10659e401` (v0.4.0). Its design/test guidance explicitly routes external application state outside the hosted shell. No shell-plugin manifest or shell-hosted QML was added to this standalone application.
 
 Current stack adds native OAuth/refresh, provider-schema-checked rich X requests, local artwork uploads, account-bound draft receipts, a restricted browser native-message outbox, explicit Substack confirmations, and companion packaging. The outbox and keyring mutations use a shared application-state lock. Publishing receipts remain publication-owned. Browser sessions remain browser-owned.
 

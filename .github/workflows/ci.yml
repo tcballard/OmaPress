@@ -61,3 +61,40 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/SHA256SUMS
+  arch-package:
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build and runtime dependencies
+        run: pacman -Syu --noconfirm rust cmake qt6-base qt6-declarative qt6-wayland git github-cli curl libsecret xdg-utils python desktop-file-utils namcap
+      - name: Build unsigned package as an ordinary user
+        run: |
+          useradd --create-home builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- bash -c 'cd "$1"; makepkg --noconfirm --cleanbuild; makepkg --printsrcinfo > actual.SRCINFO; diff -u .SRCINFO actual.SRCINFO' _ "$GITHUB_WORKSPACE/packaging/arch"
+      - name: Inspect, install, launch, reinstall and remove
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_BACKEND: software
+        run: |
+          cd packaging/arch
+          namcap PKGBUILD
+          package=$(find . -maxdepth 1 -name 'pressroom-*.pkg.tar.zst' ! -name '*debug*' -print -quit)
+          test -n "$package"
+          namcap "$package"
+          bsdtar -tf "$package" > package-files.txt
+          pacman -U --noconfirm "$package"
+          runuser -u builder -- env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software pressroom-desktop --dialogs-smoke
+          runuser -u builder -- python "$GITHUB_WORKSPACE/tests/installed_companion.py" /usr
+          pacman -U --noconfirm "$package"
+          pacman -R --noconfirm pressroom
+          test ! -e /usr/bin/pressroom
+          test ! -e /usr/bin/pressroom-desktop
+          test ! -e /usr/bin/pressroom-companion
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pressroom-arch-unsigned
+          path: |
+            packaging/arch/*.pkg.tar.zst
+            packaging/arch/package-files.txt
