@@ -3,7 +3,7 @@
 use anyhow::{Context, Result, bail};
 use std::{
     fs::File,
-    io::Read,
+    io::{Read, Seek, SeekFrom, Write},
     os::unix::process::CommandExt,
     path::Path,
     process::{Command, Stdio},
@@ -11,12 +11,24 @@ use std::{
     time::{Duration, Instant},
 };
 pub fn run(program: &str, args: &[&str], cwd: Option<&Path>, timeout: Duration) -> Result<String> {
+    run_input(program, args, cwd, timeout, &[])
+}
+pub fn run_input(
+    program: &str,
+    args: &[&str],
+    cwd: Option<&Path>,
+    timeout: Duration,
+    input: &[u8],
+) -> Result<String> {
+    let mut stdin = tempfile::tempfile()?;
+    stdin.write_all(input)?;
+    stdin.seek(SeekFrom::Start(0))?;
     let stdout = tempfile::tempfile()?;
     let stderr = tempfile::tempfile()?;
     let mut command = Command::new(program);
     command
         .args(args)
-        .stdin(Stdio::null())
+        .stdin(Stdio::from(stdin))
         .stdout(stdout.try_clone()?)
         .stderr(stderr.try_clone()?)
         .process_group(0)

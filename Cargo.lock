@@ -556,40 +556,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pressroom-cli"
-version = "0.1.0-rc.1"
-dependencies = [
- "anyhow",
- "clap",
- "pressroom-core",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pressroom-core"
-version = "0.1.0-rc.1"
-dependencies = [
- "anyhow",
- "chrono",
- "chrono-tz",
- "fs2",
- "libc",
- "minijinja",
- "percent-encoding",
- "pulldown-cmark",
- "roxmltree",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "tempfile",
- "toml",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -638,6 +604,40 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d83eb9bc6d8e5cf568e7a1101d60ee05e81ed50ea106026f3d18deeb046d7661"
 dependencies = [
  "zerovec",
+]
+
+[[package]]
+name = "pressroom-cli"
+version = "0.1.0-rc.1"
+dependencies = [
+ "anyhow",
+ "clap",
+ "pressroom-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pressroom-core"
+version = "0.1.0-rc.1"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "chrono-tz",
+ "fs2",
+ "libc",
+ "minijinja",
+ "percent-encoding",
+ "pulldown-cmark",
+ "roxmltree",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "tempfile",
+ "toml",
+ "url",
+ "uuid",
 ]
 
 [[package]]

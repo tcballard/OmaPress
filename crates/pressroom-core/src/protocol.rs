@@ -307,6 +307,9 @@ pub fn execute(req: Request) -> Result<Value> {
             string(a, "expected_source_hash")?,
             req.command == "x-publish",
         ),
+        "x-connect" => crate::connections::connect(string(a, "client_id")?),
+        "x-status" => crate::connections::status(),
+        "x-disconnect" => crate::connections::disconnect(),
         "github-status" => deploy::github_status(),
         "repositories" => deploy::repositories(),
         "setup" => deploy::setup(

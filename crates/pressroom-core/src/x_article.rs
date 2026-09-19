@@ -33,8 +33,7 @@ pub fn payload(a: &Article) -> Result<Value> {
     Ok(json!({"title":a.meta.title,"content_state":{"blocks":blocks,"entities":[]}}))
 }
 pub fn token() -> Result<String> {
-    let value=process::run("secret-tool",&["lookup","application","pressroom","service","x"],None,Duration::from_secs(15))
-        .map_err(|_|anyhow::anyhow!("Connect X first: store a user OAuth access token in Secret Service (see Connections help)."))?;
+    let value = crate::connections::access_token()?;
     let value = value.trim().to_string();
     ensure!(
         !value.is_empty()
@@ -59,7 +58,7 @@ pub fn request(token: &str, path: &str, body: &Value) -> Result<Value> {
     payload.write_all(&serde_json::to_vec(body)?)?;
     let url = format!("https://api.x.com{path}");
     let data = format!("@{}", payload.path().display());
-    let output=process::run("curl",&["--silent","--show-error","--fail","--max-time","60","--proto","=https","--config",config.path().to_str().unwrap(),"--header","Content-Type: application/json","--data-binary",&data,&url],None,Duration::from_secs(65))
+    let output=process::run("curl",&["--disable","--silent","--show-error","--fail","--max-time","60","--proto","=https","--config",config.path().to_str().unwrap(),"--header","Content-Type: application/json","--data-binary",&data,&url],None,Duration::from_secs(65))
         .map_err(|_|anyhow::anyhow!("X request did not complete successfully. Its outcome may be unknown; check X before retrying."))?;
     let value: Value = serde_json::from_str(&output)?;
     ensure!(
