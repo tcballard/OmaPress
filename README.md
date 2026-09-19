@@ -81,7 +81,7 @@ For a package installation, uninstall with `sudo pacman -R pressroom`; publicati
 
 Use **Add article…** for plain text or Markdown from ChatGPT, then save and review
 it. **Queue…** schedules the saved version for Website and/or X on a local or SSH
-worker. An always-on worker can publish while the laptop is closed. Substack still
-uses its browser handoff. Website jobs deploy all Ready/Published articles together.
+worker. An always-on worker can publish while the laptop is closed. Substack can use the optional [Gateway integration](docs/substack-gateway.md)
+to create drafts and submit schedules directly, or use the browser handoff. Website jobs deploy all Ready/Published articles together.
 See [scheduling and worker setup](docs/scheduling.md) for the source-change rules,
 credentials, timer installation, cancellation and current limitations.

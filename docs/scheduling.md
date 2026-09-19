@@ -16,8 +16,9 @@ nonexistent times at the clock change are rejected. The RPC also accepts an RFC3
 - Website deploys **all Ready/Published articles in that publication together**.
   Keep later website articles in Draft. This release does not provide independent
   per-article website release dates. One outstanding website job is allowed.
-- Substack is a browser handoff. Prepare its draft, review audience and delivery,
-  then complete publishing/scheduling in Substack. No Substack job is sent to the worker.
+- Substack can use the optional [Gateway integration](substack-gateway.md) to submit
+  a reviewed schedule directly to Substack. The browser handoff remains available.
+  No Substack job is sent to this website/X worker.
 - The whole source hash is pinned. Any content, configuration, artwork or theme
   change on the executing host blocks pending jobs. Cancel and review again;
   the queue never quietly publishes a newly edited version.
