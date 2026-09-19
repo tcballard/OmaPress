@@ -38,21 +38,21 @@ jobs:
       - run: cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release && cmake --build build/desktop --parallel 2
       - name: Native application and clipboard smoke
         env:
-          OMAPRESS_CLI: ${{ github.workspace }}/target/release/omapress
+          PRESSROOM_CLI: ${{ github.workspace }}/target/release/pressroom
           QT_QUICK_BACKEND: software
         run: |
-          xvfb-run -a build/desktop/omapress-desktop --publication "$PWD/fixtures/fixing-everything" --smoke
-          xvfb-run -a build/desktop/omapress-desktop --clipboard-smoke
+          xvfb-run -a build/desktop/pressroom-desktop --publication "$PWD/fixtures/fixing-everything" --smoke
+          xvfb-run -a build/desktop/pressroom-desktop --clipboard-smoke
       - run: python3 scripts/package.py
       - name: Install bundle and verify both binaries
         run: |
-          bundle=$(find dist -mindepth 1 -maxdepth 1 -type d -name 'omapress-*' -print -quit)
-          sh "$bundle/install.sh" "$RUNNER_TEMP/omapress-installed"
-          "$RUNNER_TEMP/omapress-installed/bin/omapress" --version
-          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software "$RUNNER_TEMP/omapress-installed/bin/omapress-desktop" --smoke
+          bundle=$(find dist -mindepth 1 -maxdepth 1 -type d -name 'pressroom-*' -print -quit)
+          sh "$bundle/install.sh" "$RUNNER_TEMP/pressroom-installed"
+          "$RUNNER_TEMP/pressroom-installed/bin/pressroom" --version
+          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software "$RUNNER_TEMP/pressroom-installed/bin/pressroom-desktop" --smoke
       - uses: actions/upload-artifact@v4
         with:
-          name: omapress-linux-x86_64
+          name: pressroom-linux-x86_64
           path: |
             dist/*.tar.gz
             dist/SHA256SUMS

@@ -12,7 +12,7 @@
 #include <QJsonObject>
 #include <cstdio>
 int main(int argc,char **argv){
-    QGuiApplication app(argc,argv);app.setApplicationName("OmaPress");app.setOrganizationName("OmaPress");app.setApplicationVersion("0.1.0-rc.1");app.setDesktopFileName("omapress");
+    QGuiApplication app(argc,argv);app.setApplicationName("Pressroom");app.setOrganizationName("Pressroom");app.setApplicationVersion("0.1.0-rc.1");app.setDesktopFileName("pressroom");
     QQuickStyle::setStyle("Material");Bridge bridge;
     const auto args=app.arguments();
     if(args.contains("--clipboard-smoke")){bridge.copyArticle("<h1>Test</h1><p><a href=\"https://example.com\">Source</a></p>","Test\n\nSource (https://example.com)");auto mime=QGuiApplication::clipboard()->mimeData();return mime&&mime->hasHtml()&&mime->text().contains("https://example.com")?0:1;}

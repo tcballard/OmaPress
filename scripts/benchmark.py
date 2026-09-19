@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Synthetic engine benchmark. Never substitutes for the XPS acceptance gate."""
 import json,os,pathlib,statistics,subprocess,tempfile,time,uuid
-root=pathlib.Path(__file__).resolve().parents[1];cli=os.environ.get('OMAPRESS_CLI',str(root/'target/release/omapress'))
+root=pathlib.Path(__file__).resolve().parents[1];cli=os.environ.get('PRESSROOM_CLI',str(root/'target/release/pressroom'))
 def rpc(path,cmd,args={}):
     p=subprocess.run([cli,'rpc'],input=json.dumps({'schema':1,'command':cmd,'path':str(path),'args':args}),text=True,capture_output=True,check=True)
     v=json.loads(p.stdout);assert v['ok'],v;return v['result']

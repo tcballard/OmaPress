@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=OmaPress
+Name=Pressroom
 Comment=Write and publish your independent publication
-Exec=omapress-desktop
-Icon=omapress
+Exec=pressroom-desktop
+Icon=pressroom
 Terminal=false
 Categories=Office;Publishing;
 Keywords=Markdown;RSS;Blog;Publishing;
-StartupWMClass=omapress-desktop
+StartupWMClass=pressroom-desktop

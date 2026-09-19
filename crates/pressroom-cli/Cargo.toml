@@ -1,16 +1,16 @@
 [package]
-name = "omapress-cli"
+name = "pressroom-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
 [[bin]]
-name = "omapress"
+name = "pressroom"
 path = "src/main.rs"
 
 [dependencies]
-omapress-core = { path = "../omapress-core" }
+pressroom-core = { path = "../pressroom-core" }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true

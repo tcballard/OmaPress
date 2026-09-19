@@ -1,4 +1,4 @@
-use omapress_core::{
+use pressroom_core::{
     model::*,
     preview,
     protocol::{self, Request},
@@ -293,7 +293,7 @@ fn ready_validation_rejects_missing_title_and_bad_source() {
     assert!(d.iter().any(|d| d.message.contains("Invalid source link")));
 }
 #[test]
-fn concurrent_omapress_writes_are_locked() {
+fn concurrent_pressroom_writes_are_locked() {
     let (_t, s) = fixture();
     let _lock = lock(&s.root).unwrap();
     assert!(lock(&s.root).is_err());
@@ -409,5 +409,121 @@ fn x_preview_is_offline_but_clipboard_retains_image_reference() {
         export
             .html
             .contains("src=\"https://example.com/image.png\"")
+    );
+}
+
+#[test]
+fn distribution_receipts_survive_reopen_and_detect_corrections() {
+    let (_t, s) = fixture();
+    let s = ready(&s);
+    let path = "content/today-in-omarchy/story.md";
+    let v = pressroom_core::distribution::confirm(
+        &s.root,
+        path,
+        &s.hash,
+        "substack",
+        "https://example.substack.com/p/story",
+    )
+    .unwrap();
+    assert_eq!(v["targets"][2]["status"], "confirmed_by_user");
+    assert_eq!(snapshot(&s.root).unwrap().hash, s.hash);
+    let reopened = pressroom_core::distribution::plan(&s.root, path, &s.hash).unwrap();
+    assert_eq!(
+        reopened["targets"][2]["receipt"]["url"],
+        "https://example.substack.com/p/story"
+    );
+    let changed = save_article(
+        &s.root,
+        path,
+        &article(ID, "story", Status::Ready, "A corrected body."),
+        &s.hash,
+    )
+    .unwrap();
+    assert_eq!(
+        pressroom_core::distribution::plan(&s.root, path, &changed.hash).unwrap()["targets"][2]["status"],
+        "changed"
+    );
+    assert!(
+        pressroom_core::distribution::confirm(
+            &s.root,
+            path,
+            &s.hash,
+            "substack",
+            "https://example.substack.com/p/story"
+        )
+        .is_err()
+    );
+    let build = render::build(&changed, &state(&s.root).unwrap(), false).unwrap();
+    assert!(!build.files.keys().any(|p| p.contains("distribution")));
+}
+#[test]
+fn distribution_rejects_corrupt_history_and_unsafe_urls() {
+    let (_t, s) = fixture();
+    let s = ready(&s);
+    let path = "content/today-in-omarchy/story.md";
+    for (target, url) in [
+        ("x", "https://evil.test/status/123"),
+        ("substack", "http://example.com/p/story"),
+        ("substack", "https://user:secret@example.com/p/story"),
+        ("website", "https://example.com/p/story"),
+    ] {
+        assert!(
+            pressroom_core::distribution::confirm(&s.root, path, &s.hash, target, url).is_err()
+        );
+    }
+    atomic_write(&s.root.join(".omapress/distribution.json"), b"{broken").unwrap();
+    assert!(pressroom_core::distribution::plan(&s.root, path, &s.hash).is_err());
+    assert_eq!(
+        fs::read(s.root.join(".omapress/distribution.json")).unwrap(),
+        b"{broken"
+    );
+}
+#[test]
+fn x_api_preserves_unicode_paragraphs_and_refuses_silent_format_loss() {
+    let mut a = parse_article(
+        "content/a.md",
+        article(ID, "story", Status::Ready, "Hello 🌍.\n\nSecond paragraph.").as_bytes(),
+    )
+    .unwrap();
+    let p = pressroom_core::x_article::payload(&a).unwrap();
+    assert_eq!(p["content_state"]["blocks"][0]["text"], "Hello 🌍.");
+    assert_eq!(p["content_state"]["blocks"].as_array().unwrap().len(), 2);
+    a.body = "A **bold** point.".into();
+    assert!(pressroom_core::x_article::payload(&a).is_err());
+    a.body = "Plain body.".into();
+    a.meta.header_image = Some("media/header.png".into());
+    assert!(pressroom_core::x_article::payload(&a).is_err());
+}
+#[test]
+fn pending_x_outcome_blocks_duplicate_without_credentials() {
+    let (_t, s) = fixture();
+    let s = save_article(
+        &s.root,
+        "content/today-in-omarchy/story.md",
+        &article(ID, "story", Status::Ready, "Plain body."),
+        &s.hash,
+    )
+    .unwrap();
+    let a = parse_article(
+        "content/today-in-omarchy/story.md",
+        &s.files["content/today-in-omarchy/story.md"],
+    )
+    .unwrap();
+    let ledger = json!({"schema":1,"entries":{ID:{"x":{"article_hash":a.hash,"status":"unknown","url":"","remote_id":"","updated_at":"2026-09-19T12:00:00Z"}}}});
+    atomic_write(
+        &s.root.join(".omapress/distribution.json"),
+        &serde_json::to_vec(&ledger).unwrap(),
+    )
+    .unwrap();
+    let err = pressroom_core::distribution::x_action(&s.root, &a.path, &s.hash, true)
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("unknown outcome"), "{err}");
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(
+            &fs::read(s.root.join(".omapress/distribution.json")).unwrap()
+        )
+        .unwrap(),
+        ledger
     );
 }

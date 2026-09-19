@@ -274,6 +274,39 @@ pub fn execute(req: Request) -> Result<Value> {
             let article = parse_article(path, s.files.get(path).context("Article not found")?)?;
             Ok(serde_json::to_value(render::export_x(&s, &article))?)
         }
+        "distribution-review" => crate::distribution::review(
+            root,
+            string(a, "article")?,
+            string(a, "expected_source_hash")?,
+            a["website"].as_bool().unwrap_or(false),
+            a["x"].as_bool().unwrap_or(false),
+        ),
+        "distribution-publish" => crate::distribution::publish_selected(
+            root,
+            string(a, "article")?,
+            string(a, "expected_source_hash")?,
+            a["website"].as_bool().unwrap_or(false),
+            a["x"].as_bool().unwrap_or(false),
+            a["expected_remote_head"].as_str().unwrap_or(""),
+        ),
+        "distribution-plan" => crate::distribution::plan(
+            root,
+            string(a, "article")?,
+            string(a, "expected_source_hash")?,
+        ),
+        "distribution-confirm" => crate::distribution::confirm(
+            root,
+            string(a, "article")?,
+            string(a, "expected_source_hash")?,
+            string(a, "target")?,
+            string(a, "url")?,
+        ),
+        "x-draft" | "x-publish" => crate::distribution::x_action(
+            root,
+            string(a, "article")?,
+            string(a, "expected_source_hash")?,
+            req.command == "x-publish",
+        ),
         "github-status" => deploy::github_status(),
         "repositories" => deploy::repositories(),
         "setup" => deploy::setup(
