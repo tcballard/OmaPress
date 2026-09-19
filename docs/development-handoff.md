@@ -1,6 +1,6 @@
 # Pressroom distribution development handoff
 
-Uses Build Omarchy Apps main `338b36944f07a60ecc7558fb203bba7bb392eda6` (v0.1.0 metadata), including its architecture/lifecycle additions. Applied Design, Desktop, State, Package and Test guidance. Retains the Qt/C++ desktop and independently testable Rust core.
+Uses Build Omarchy Apps v0.2.0 (`ac54d4f`, refreshed during development; skill contents unchanged from architecture commit `338b36944f07a60ecc7558fb203bba7bb392eda6`), including its architecture/lifecycle additions. Applied Design, Desktop, State, Package and Test guidance. Retains the Qt/C++ desktop and independently testable Rust core.
 
 ## Ownership
 
@@ -10,6 +10,7 @@ The native UI owns selection and transient review state; the engine owns article
 
 Historical verification remains in `verification.md` unchanged and applies to its original OmaPress sources. Current development commands and results are recorded in the PR; the PR commit identifies the actual tested tree.
 
+- Reproduced: 26 Rust tests, four mocked X RPC integration tests, six deployment integration tests, loopback/feed checks, fmt and clippy with warnings denied. Provider doubles do not establish live API acceptance.
 - Rust toolchain used locally: 1.98.1; repository pin remains 1.98.0.
 - Platform: Linux development container, not a real Omarchy/Hyprland session.
 - Native dependency installation attempt failed because the container could not switch apt's service user; no native desktop execution is claimed from that attempt.

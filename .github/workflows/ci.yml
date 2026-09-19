@@ -20,6 +20,7 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
       - run: cargo build --workspace --locked
+      - run: python3 tests/distribution.py
       - run: python3 tests/deployment.py
       - run: python3 tests/preview_http.py
       - run: cargo build --release --locked
