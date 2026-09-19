@@ -38,7 +38,13 @@
         "rollback",
         "recovery-document",
         "recovery-save",
-        "recovery-clear"
+        "recovery-clear",
+        "distribution-plan",
+        "distribution-confirm",
+        "distribution-review",
+        "distribution-publish",
+        "x-draft",
+        "x-publish"
       ]
     },
     "path": {

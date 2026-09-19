@@ -7,7 +7,7 @@ language = "en-GB"
 timezone = "Europe/London"
 author = "Example Author"
 theme = "default"
-about = "An independent publication. Written and published with OmaPress."
+about = "An independent publication. Written and published with Pressroom."
 x_export_order = [
     "masthead",
     "edition",

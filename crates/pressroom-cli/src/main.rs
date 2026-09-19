@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
-use omapress_core::{
+use pressroom_core::{
     preview,
     protocol::{self, Request},
 };

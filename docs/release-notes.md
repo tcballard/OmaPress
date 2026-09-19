@@ -1,4 +1,4 @@
-OmaPress's first native publishing release candidate includes a C++/Qt editor, Rust engine, deterministic static websites, RSS/Atom/JSON feeds, separate X article/caption exports, guarded GitHub Pages publishing, deployment recheck and rollback.
+Pressroom's first native publishing release candidate includes a C++/Qt editor, Rust engine, deterministic static websites, RSS/Atom/JSON feeds, separate X article/caption exports, guarded GitHub Pages publishing, deployment recheck and rollback.
 
 Install the Linux x86_64 bundle on Omarchy with `sh install.sh`. Shared Qt 6 libraries, Git, GitHub CLI and curl are required. No browser engine is bundled.
 

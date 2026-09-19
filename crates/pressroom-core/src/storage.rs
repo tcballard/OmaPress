@@ -216,7 +216,7 @@ pub fn lock(root: &Path) -> Result<Lock> {
         .write(true)
         .open(p)?;
     f.try_lock_exclusive()
-        .context("Another OmaPress operation is active")?;
+        .context("Another Pressroom operation is active")?;
     Ok(Lock(f))
 }
 pub fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
@@ -283,7 +283,7 @@ pub fn init(path: &Path, name: &str, base_url: &str, author: &str) -> Result<Sna
         timezone: "Europe/London".into(),
         author: author.into(),
         theme: "default".into(),
-        about: "An independent publication. Written and published with OmaPress.".into(),
+        about: "An independent publication. Written and published with Pressroom.".into(),
         feeds: FeedConfig::default(),
         deploy: DeployConfig::default(),
         series,

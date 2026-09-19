@@ -8,7 +8,7 @@ ApplicationWindow {
     id: win
     width: 1440; height: 930; minimumWidth: 900; minimumHeight: 620
     visible: true
-    title: (dirty ? "• " : "") + (meta.title || "OmaPress") + (publication.config ? " — " + publication.config.name : "")
+    title: (dirty ? "• " : "") + (meta.title || "Pressroom") + (publication.config ? " — " + publication.config.name : "")
     color: backend.background
     Material.theme: Qt.darker(backend.background, 1).r + Qt.darker(backend.background, 1).g + Qt.darker(backend.background, 1).b > 1.5 ? Material.Light : Material.Dark
     Material.accent: backend.accent
@@ -34,6 +34,8 @@ ApplicationWindow {
     property string rendered: ""
     property var exportData: ({html:"",text:"",caption:"",warnings:[]})
     property var publishPlan: ({})
+    property var distribution: ({})
+    property var distributionReview: ({})
     property var recovery: ({})
     property var pendingAction: null
     property string rollbackId: ""
@@ -54,7 +56,11 @@ ApplicationWindow {
     function docArgs() { return {article:articlePath,meta:meta,body:editor.text,expected_source_hash:sourceHash} }
     function save() { if (hasArticle) { savingRevision = editRevision; backend.request("save-document", docArgs(), "save") } }
     function renderNow() { if (hasArticle) backend.request("render-document", docArgs(), "render") }
-    function requestPublish() { guarded(function(){ rollbackId = ""; backend.request("publish-plan",{expected_source_hash:sourceHash},"plan") }) }
+    function requestPublish() { guarded(function(){
+        if (hasArticle) backend.request("distribution-plan",{article:articlePath,expected_source_hash:sourceHash},"distribution")
+        else { rollbackId="";backend.request("publish-plan",{expected_source_hash:sourceHash},"plan") }
+    }) }
+    function distributionArgs() { return {article:distribution.article,expected_source_hash:distribution.source_hash} }
     function setDocument(value) {
         loading = true; articlePath = value.article.path; meta = value.article.meta; editor.text = value.article.body;
         sourceHash = value.source_hash; dirty = false; loading = false; renderNow();
@@ -92,8 +98,12 @@ ApplicationWindow {
             else if(tag==="build") {say("Site and feeds built. Preview the exact site before publishing.");backend.startPreview(false)}
             else if(tag==="media") {sourceHash=v.source_hash;setMeta("header_image",v.media_path);say("Image imported into this publication.")}
             else if(tag==="settings-save") {publication=v;sourceHash=v.source_hash;settingsDialog.close();say("Publication settings saved.")}
+            else if(tag==="distribution-review") {distributionReview=v;batchConfirm.open()}
+            else if(tag==="distribution-publish") {distribution=v.distribution;var errors=v.results.filter(function(r){return !!r.error});say(errors.length?errors.map(function(r){return r.target+": "+r.error}).join("\n"):"Publishing finished. Check the recorded destination results.",errors.length>0);backend.request("inspect",{},"refresh")}
+            else if(tag==="distribution") {distribution=v;distributionDialog.open()}
+            else if(tag==="x-action"||tag==="confirm-destination") {distribution=v;say(tag==="x-action"?"X result recorded. Review its destination status.":"Published URL recorded as confirmed by you.")}
             else if(tag==="plan") {publishPlan=v;publishDialog.open()}
-            else if(tag==="publish"||tag==="recheck"||tag==="rollback") {say(v.status==="published"?"Publication verified and live.":(v.message||"Deployment needs a recheck."),v.status!=="published");backend.request("inspect",{},"refresh")}
+            else if(tag==="publish"||tag==="recheck"||tag==="rollback") {say(v.status==="published"?"Publication verified and live.":(v.message||"Deployment needs a recheck."),v.status!=="published");backend.request("inspect",{},"refresh");if(distributionDialog.visible)backend.request("distribution-plan",distributionArgs(),"x-action")}
             else if(tag==="github")say("Signed in to GitHub as "+v.login+".")
             else if(tag==="setup")say(v.message)
             else if(tag==="delete") {publication=v;sourceHash=v.source_hash;articlePath="";meta={};editor.text="";dirty=false}
@@ -104,7 +114,7 @@ ApplicationWindow {
         padding: 8
         RowLayout {
             anchors.fill: parent; spacing: 12
-            Label { text:"OmaPress";font.pixelSize:20;font.bold:true;Layout.leftMargin:8 }
+            Label { text:"Pressroom";font.pixelSize:20;font.bold:true;Layout.leftMargin:8 }
             Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.65 }
             BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
             Button { text:"Save";enabled:hasArticle&&dirty;onClicked:save();Accessible.name:"Save article locally" }
@@ -137,7 +147,7 @@ ApplicationWindow {
                     Label { text:opened&&publication.state&&publication.state.pending?"Deployment needs recheck":opened&&publication.state&&publication.state.deployments.length?"Last deployment verified":"Local publication";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.65;font.pixelSize:12 }
                     Button { text:"Deployment history";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:historyDialog.open() }
                     Button { text:"Settings";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:guarded(function(){configEditor.text=publication.config_text;settingsDialog.open()}) }
-                    Label { text:"OmaPress 0.1.0-rc.1";font.pixelSize:11;opacity:.4 }
+                    Label { text:"Pressroom 0.1.0-rc.1";font.pixelSize:11;opacity:.4 }
                 }
             }
             Rectangle { Layout.fillHeight:true;implicitWidth:1;color:backend.foreground;opacity:.13 }
@@ -170,6 +180,7 @@ ApplicationWindow {
                     Label {text:dirty?"Unsaved changes":"Saved locally";font.pixelSize:12;opacity:.65;Layout.fillWidth:true}
                     ToolButton {text:"Metadata";onClicked:metadataDialog.open()}
                     ToolButton {text:"Checks";onClicked:guarded(function(){backend.request("validate",{},"validate")})}
+                    ToolButton {text:"Publish article…";enabled:!backend.busy;onClicked:requestPublish()}
                     ToolButton {text:"X export";onClicked:{renderNow();exportDialog.open()}}
                     ToolButton {text:showPreview?"Hide preview":"Show preview";onClicked:showPreview=!showPreview}
                 }
@@ -217,7 +228,7 @@ ApplicationWindow {
     FolderDialog {id:openFolder;title:"Open publication folder";onAccepted:openPublication(backend.localPath(selectedFolder))}
     FolderDialog {id:createParent;title:"Choose where to create the publication";onAccepted:createPath.text=backend.localPath(selectedFolder)+"/fixing-everything"}
     FileDialog {id:mediaImport;title:"Import header image";nameFilters:["Images (*.png *.jpg *.jpeg *.webp *.gif *.avif)"];onAccepted:backend.request("import-media",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"media")}
-    FileDialog {id:articleImport;title:"Import Markdown article with OmaPress front matter";nameFilters:["Markdown (*.md)"];onAccepted:backend.request("import-article",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"import")}
+    FileDialog {id:articleImport;title:"Import Markdown article with Pressroom front matter";nameFilters:["Markdown (*.md)"];onAccepted:backend.request("import-article",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"import")}
 
     Dialog {id:createDialog;title:"Create a publication";modal:true;anchors.centerIn:parent;width:540;standardButtons:Dialog.Cancel
         ColumnLayout {width:parent.width;spacing:12
@@ -285,6 +296,69 @@ ApplicationWindow {
             RowLayout {Button{text:"Copy article";highlighted:true;enabled:!backend.busy;onClicked:{backend.copyArticle(exportData.html,exportData.text);say("Article copied as HTML and plain text.")}}Button{text:"Copy caption";enabled:!backend.busy;onClicked:{backend.copyText(exportData.caption);say("Caption copied.")}}}
         }
     }
+
+    Dialog {id:distributionDialog;title:"Publish article";modal:true;anchors.centerIn:parent;width:760;height:Math.min(win.height-60,800);standardButtons:Dialog.Close
+        ScrollView {anchors.fill:parent;clip:true
+            ColumnLayout {width:distributionDialog.availableWidth-24;spacing:14
+                Label {text:distribution.title||"";font.pixelSize:24;font.bold:true;wrapMode:Text.Wrap;Layout.fillWidth:true}
+                Label {text:"One saved article. A separate result for each destination.";opacity:.7}
+                Label {text:distribution.ready?"Reviewed saved version ready for publication.":"Mark this article Ready and resolve publication checks before publishing.";wrapMode:Text.Wrap;Layout.fillWidth:true;color:backend.accent}
+                Repeater {model:distribution.targets||[];delegate:Frame {required property var modelData;Layout.fillWidth:true
+                    ColumnLayout {width:parent.width
+                        Label {text:({website:"Website",x:"X Articles",substack:"Substack"})[modelData.target];font.bold:true;font.pixelSize:18}
+                        Label {text:modelData.status.replace(/_/g," ");color:backend.accent}
+                        Button {visible:!!(modelData.receipt&&modelData.receipt.url);text:"Open recorded destination";onClicked:backend.openUrl(modelData.receipt.url)}
+                    }
+                }}
+                RowLayout {
+                    CheckBox {id:batchWebsite;text:"Website";checked:true}
+                    CheckBox {id:batchX;text:"X Articles (text API)";enabled:!!distribution.x_api_supported}
+                    Button {text:"Review selected destinations…";enabled:distribution.ready&&!backend.busy&&(batchWebsite.checked||(batchX.checked&&batchX.enabled));onClicked:{var a=distributionArgs();a.website=batchWebsite.checked;a.x=batchX.checked&&batchX.enabled;backend.request("distribution-review",a,"distribution-review")}}
+                }
+                Label {text:distribution.website_scope||"";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                Button {text:"Review website deployment…";enabled:distribution.ready&&!backend.busy;onClicked:{rollbackId="";backend.request("publish-plan",{expected_source_hash:distribution.source_hash},"plan")}}
+                Label {text:"X Articles · API preview";font.bold:true}
+                Label {text:distribution.x_api_issue||"Text-only API publishing is available with a user OAuth token. Live account acceptance is pending.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                RowLayout {
+                    Button {text:"Create X draft";enabled:distribution.ready&&distribution.x_api_supported&&!backend.busy;onClicked:backend.request("x-draft",distributionArgs(),"x-action")}
+                    Button {text:"Publish on X…";enabled:distribution.ready&&distribution.x_api_supported&&!backend.busy;onClicked:xConfirm.open()}
+                    Button {text:"Copy rich article";enabled:!!distribution.x;onClicked:{backend.copyArticle(distribution.x.html,distribution.x.text);say("Rich article copied. Upload artwork separately in X.")}}
+                }
+                Button {text:"Open X Articles";onClicked:backend.openUrl("https://x.com/compose/articles")}
+                Label {text:"Substack · assisted publishing";font.bold:true}
+                Label {text:"Copy the article into Substack, upload artwork, then review the audience and email delivery there. Automatic Substack publishing is not enabled.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                RowLayout {
+                    Button {text:"Copy title";onClicked:backend.copyText(distribution.substack.title)}
+                    Button {text:"Copy subtitle";onClicked:backend.copyText(distribution.substack.subtitle)}
+                    Button {text:"Copy article body";onClicked:backend.copyArticle(distribution.substack.html,distribution.substack.text)}
+                    Button {text:"Open Substack";onClicked:backend.openUrl("https://substack.com/publish")}
+                }
+                Label {text:"Record a published article";font.bold:true}
+                Label {text:"This records your confirmation, not independent provider verification.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                ComboBox {id:receiptTarget;model:["x","substack"];Accessible.name:"Published destination"}
+                TextField {id:receiptUrl;placeholderText:"https://… published article URL";Layout.fillWidth:true;Accessible.name:"Published article URL"}
+                Button {text:"Record published URL";enabled:receiptUrl.text!==""&&!backend.busy;onClicked:{var a=distributionArgs();a.target=receiptTarget.currentText;a.url=receiptUrl.text;backend.request("distribution-confirm",a,"confirm-destination")}}
+                Label {text:"X connection: store a user OAuth access token with Secret Service. See docs/distribution.md. Tokens are never saved in publication files.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.6}
+            }
+        }
+    }
+    Dialog {id:batchConfirm;title:"Publish selected destinations?";modal:true;anchors.centerIn:parent;width:600;standardButtons:Dialog.Cancel
+        ColumnLayout {width:parent.width;spacing:12
+            Label {text:distributionReview.title||"";font.bold:true;wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Label {text:"Publish to: "+(distributionReview.website?"Website ":"")+(distributionReview.x?"X Articles":"");wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Label {visible:!!distributionReview.website;text:"Website repository: "+(distributionReview.site?distributionReview.site.repository:"")+"\nAll Ready/Published articles are included in the website deployment.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Label {text:"Substack remains assisted. If one destination fails, successful destinations remain published.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Button {text:"Publish reviewed version";enabled:!backend.busy;onClicked:{var r=distributionReview;backend.request("distribution-publish",{article:r.article,expected_source_hash:r.source_hash,website:r.website,x:r.x,expected_remote_head:r.site?r.site.expected_remote_head:""},"distribution-publish");batchConfirm.close()}}
+        }
+    }
+    Dialog {id:xConfirm;title:"Publish on X?";modal:true;anchors.centerIn:parent;width:500;standardButtons:Dialog.Cancel
+        ColumnLayout {width:parent.width
+            Label {text:"Make this reviewed article public on X: "+(distribution.title||"");wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Label {text:"Website and Substack are separate destinations. This action publishes only on X.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Button {text:"Publish reviewed article on X";enabled:!backend.busy;onClicked:{xConfirm.close();backend.request("x-publish",distributionArgs(),"x-action")}}
+        }
+    }
+
     Dialog {id:settingsDialog;title:"Publication settings";modal:true;anchors.centerIn:parent;width:760;height:Math.min(win.height-60,790);standardButtons:Dialog.Close
         ColumnLayout {anchors.fill:parent
             Label {text:"Publication details, series and appearance";font.bold:true}

@@ -556,18 +556,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "omapress-cli"
+name = "pressroom-cli"
 version = "0.1.0-rc.1"
 dependencies = [
  "anyhow",
  "clap",
- "omapress-core",
+ "pressroom-core",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "omapress-core"
+name = "pressroom-core"
 version = "0.1.0-rc.1"
 dependencies = [
  "anyhow",
