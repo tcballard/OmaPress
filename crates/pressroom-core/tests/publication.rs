@@ -488,10 +488,10 @@ fn x_api_preserves_unicode_paragraphs_and_refuses_silent_format_loss() {
     let p = pressroom_core::x_article::payload(&a).unwrap();
     assert_eq!(p["content_state"]["blocks"][0]["text"], "Hello 🌍.");
     assert_eq!(p["content_state"]["blocks"].as_array().unwrap().len(), 2);
-    a.body = "A **bold** point.".into();
+    a.body = "<script>bad()</script>".into();
     assert!(pressroom_core::x_article::payload(&a).is_err());
     a.body = "Plain body.".into();
-    a.meta.header_image = Some("media/header.png".into());
+    a.meta.header_image = Some("https://remote.example/header.png".into());
     assert!(pressroom_core::x_article::payload(&a).is_err());
 }
 #[test]
@@ -525,5 +525,37 @@ fn pending_x_outcome_blocks_duplicate_without_credentials() {
         )
         .unwrap(),
         ledger
+    );
+}
+
+#[test]
+fn x_rich_text_preserves_utf16_ranges_links_and_blocks() {
+    let a = parse_article("content/a.md", article(ID,"story",Status::Ready,"# Heading\n\n🌍 **bold _both_** [link](https://example.com).\n\n- First\n- Second\n\n> Quote\n\n```rust\nlet x = 1;\n```\n").as_bytes()).unwrap();
+    let p = pressroom_core::x_article::payload(&a).unwrap();
+    let blocks = p["content_state"]["blocks"].as_array().unwrap();
+    assert_eq!(blocks[0]["type"], "header-one");
+    assert_eq!(
+        blocks[1]["inline_style_ranges"][1],
+        json!({"style":"bold","offset":3,"length":9})
+    );
+    assert_eq!(blocks[1]["entity_ranges"][0]["offset"], 13);
+    assert_eq!(
+        p["content_state"]["entities"][0]["value"]["data"]["url"],
+        "https://example.com"
+    );
+    assert_eq!(blocks[2]["type"], "atomic");
+    assert!(
+        p["content_state"]["entities"][1]["value"]["data"]["markdown"]
+            .as_str()
+            .unwrap()
+            .contains("- Second")
+    );
+    assert_eq!(blocks[3]["type"], "blockquote");
+    assert_eq!(blocks[4]["type"], "atomic");
+    assert!(
+        p["content_state"]["entities"][2]["value"]["data"]["markdown"]
+            .as_str()
+            .unwrap()
+            .contains("```rust")
     );
 }

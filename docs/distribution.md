@@ -77,3 +77,19 @@ in a publication. `curl`, `xdg-open`, and `secret-tool` are runtime dependencies
 References: [X OAuth public-client flow](https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code).
 Live X sign-in and account entitlement checks remain acceptance work on an
 Omarchy desktop with the author's developer app.
+
+## Rich X content (stack layer 2)
+
+The API adapter preserves headings 1–3, emphasis, links, quotations, Unicode,
+Markdown lists/tables/code, dividers, and standalone local PNG/JPEG images. Cover
+art uses `cover_media`. Referenced assets are validated before upload and each
+unique asset is uploaded once per draft attempt. Only local imported images up to
+5 MiB are accepted; animated/video media and images inside Markdown embeds need
+the browser export. Failed media uploads cannot create an Article; failed draft
+or publish requests retain the existing conservative unknown-outcome receipt.
+
+The frozen contract in `tests/contracts/x-article-schema.json` comes from
+[the provider OpenAPI document](https://api.x.com/2/openapi.json), retrieved
+2026-09-19. Its exact lowercase style/entity enums and prohibited extra fields are
+checked in the end-to-end provider-double test. This verifies request contracts,
+not rendering fidelity or account entitlement on a live X account.

@@ -330,13 +330,13 @@ ApplicationWindow {
                 }}
                 RowLayout {
                     CheckBox {id:batchWebsite;text:"Website";checked:true}
-                    CheckBox {id:batchX;text:"X Articles (text API)";enabled:!!distribution.x_api_supported}
+                    CheckBox {id:batchX;text:"X Articles";enabled:!!distribution.x_api_supported}
                     Button {text:"Review selected destinations…";enabled:distribution.ready&&!backend.busy&&(batchWebsite.checked||(batchX.checked&&batchX.enabled));onClicked:{var a=distributionArgs();a.website=batchWebsite.checked;a.x=batchX.checked&&batchX.enabled;backend.request("distribution-review",a,"distribution-review")}}
                 }
                 Label {text:distribution.website_scope||"";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
                 Button {text:"Review website deployment…";enabled:distribution.ready&&!backend.busy;onClicked:{rollbackId="";backend.request("publish-plan",{expected_source_hash:distribution.source_hash},"plan")}}
                 Label {text:"X Articles · API preview";font.bold:true}
-                Label {text:distribution.x_api_issue||"Text-only API publishing is available with a user OAuth token. Live account acceptance is pending.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                Label {text:distribution.x_api_issue||"Rich text, tables, code, and local PNG/JPEG artwork are supported. Live account acceptance is pending.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
                 RowLayout {
                     Button {text:"Create X draft";enabled:distribution.ready&&distribution.x_api_supported&&!backend.busy;onClicked:backend.request("x-draft",distributionArgs(),"x-action")}
                     Button {text:"Publish on X…";enabled:distribution.ready&&distribution.x_api_supported&&!backend.busy;onClicked:xConfirm.open()}

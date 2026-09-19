@@ -25,7 +25,10 @@ from pathlib import Path
 p=Path(os.environ['PRESSROOM_TEST_CALLS'])
 with p.open('a') as f:f.write(sys.argv[-1]+'\\n')
 if os.environ.get('PRESSROOM_TEST_FAILURE'):sys.exit(28)
-print(json.dumps({'data':{'id':'123'}} if sys.argv[-1].endswith('/draft') else {'data':{'post_id':'456'}}))
+if '/draft' in sys.argv[-1]:
+    payload=json.loads(Path(sys.argv[sys.argv.index('--data-binary')+1][1:]).read_text())
+    Path(str(p)+'.payload').write_text(json.dumps(payload))
+print(json.dumps({'data':{'id':'123'}} if sys.argv[-1].endswith('/draft') or sys.argv[-1].endswith('/upload') else {'data':{'post_id':'456'}}))
 """)
         self.rpc('init',name='Test publication',author='Test author',base_url='https://example.com')
         p=self.pub/'content/today-in-omarchy/story.md'
@@ -75,6 +78,38 @@ Another paragraph.
         p=self.rpc('distribution-plan',**self.args)
         self.assertEqual(p['targets'][1]['receipt']['remote_id'],'123')
         self.assertEqual(p['targets'][1]['status'],'unknown')
+    def test_rich_article_media_and_cover_use_provider_schema(self):
+        story=self.pub/self.args['article']
+        story.write_text(story.read_text().replace('slug: story','slug: story\nheader_image: /media/pixel.png')+'\n# Heading\n\n🌍 **bold** [link](https://example.com)\n\n![alt](/media/pixel.png)\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n- Item\n  - Nested\n\n```rust\nlet a=1;\n```\n')
+        import base64
+        (self.pub/'media/pixel.png').write_bytes(base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXioAAAAASUVORK5CYII='))
+        self.args['expected_source_hash']=self.rpc('inspect')['source_hash']
+        self.rpc('x-draft',**self.args)
+        payload=json.loads(Path(str(self.calls)+'.payload').read_text())
+        schema=json.loads((ROOT/'tests/contracts/x-article-schema.json').read_text())
+        # Small strict validator for this frozen provider subset; no third-party dependency.
+        def check(value,node):
+            if '$ref' in node:
+                target=schema
+                for part in node['$ref'][2:].split('/'):target=target[part]
+                return check(value,target)
+            if 'enum' in node:self.assertIn(value,node['enum'])
+            if node.get('type')=='object':
+                self.assertIsInstance(value,dict)
+                for key in node.get('required',[]):self.assertIn(key,value)
+                if node.get('additionalProperties') is False:self.assertFalse(set(value)-set(node['properties']))
+                for key,v in value.items():
+                    if key in node.get('properties',{}):check(v,node['properties'][key])
+            elif node.get('type')=='array':
+                self.assertIsInstance(value,list)
+                for v in value:check(v,node['items'])
+            elif node.get('type')=='string':self.assertIsInstance(value,str)
+            elif node.get('type')=='integer':self.assertIsInstance(value,int)
+        check(payload,schema)
+        self.assertEqual(payload['cover_media']['media_id'],'123')
+        self.assertEqual(self.routes().count('https://api.x.com/2/media/upload'),1)
+        self.assertNotIn('media/pixel.png',json.dumps(payload))
+
     def test_selected_x_destination_reports_result(self):
         p=self.rpc('distribution-publish',website=False,x=True,**self.args)
         self.assertEqual(p['distribution']['targets'][1]['status'],'published')
