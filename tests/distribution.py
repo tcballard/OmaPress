@@ -50,7 +50,7 @@ Another paragraph.
         self.args=dict(article='content/today-in-omarchy/story.md',expected_source_hash=self.rpc('inspect')['source_hash'])
     def tool(self,name,body):
         p=self.bin/name;p.write_text('#!/usr/bin/env python3\n'+body+'\n');p.chmod(0o755)
-    def rpc(self,command,expect=True,**args):
+    def rpc(self,command,/,expect=True,**args):
         result=subprocess.run([str(ENGINE),'rpc'],input=json.dumps(dict(schema=1,command=command,path=str(self.pub),args=args)),text=True,capture_output=True,env=self.env,timeout=10)
         data=json.loads(result.stdout)
         self.assertEqual(data['ok'],expect,data)

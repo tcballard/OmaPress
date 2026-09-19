@@ -76,3 +76,12 @@ MIT licence. The real Fixing Everything publication is separate from this produc
 The app and binaries are now `pressroom` / `pressroom-desktop`. Open existing publication folders directly; `.omapress/` remains the private recovery/deployment directory so no history migration is required. The previous desktop last-publication setting and `OMAPRESS_CLI` override are read as fallbacks. The GitHub repository remains `tcballard/OmaPress` during development.
 
 For a package installation, uninstall with `sudo pacman -R pressroom`; publication folders and private recovery history are user data and must be retained. To roll back, install the previous package and reopen the same folder. New distribution receipts are separate from the old deployment ledger. No live Omarchy version or App Store acceptance is claimed.
+
+### Paste and schedule
+
+Use **Add article…** for plain text or Markdown from ChatGPT, then save and review
+it. **Queue…** schedules the saved version for Website and/or X on a local or SSH
+worker. An always-on worker can publish while the laptop is closed. Substack still
+uses its browser handoff. Website jobs deploy all Ready/Published articles together.
+See [scheduling and worker setup](docs/scheduling.md) for the source-change rules,
+credentials, timer installation, cancellation and current limitations.

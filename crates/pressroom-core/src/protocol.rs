@@ -81,6 +81,13 @@ pub fn execute(req: Request) -> Result<Value> {
             inspect(&s.root)
         }
         "inspect" => inspect(root),
+        "queue-receive" => crate::schedule::receive(root, a),
+        "queue-reconcile" => crate::schedule::reconcile(root, string(a, "id")?),
+        "queue-list" => crate::schedule::list(root),
+        "queue-add" => crate::schedule::enqueue(root, a.clone()),
+        "queue-cancel" => crate::schedule::cancel(root, string(a, "id")?),
+        "queue-run" => crate::schedule::run_due(root),
+        "remote-queue" => crate::schedule::remote(root, a),
         "validate" => {
             let s = snapshot(root)?;
             let d = render::diagnostics(&s, &state(root)?);
@@ -164,7 +171,7 @@ pub fn execute(req: Request) -> Result<Value> {
             )?;
             inspect(root)
         }
-        "new" => {
+        "new" | "intake" => {
             let s = snapshot(root)?;
             s.expected(string(a, "expected_source_hash")?)?;
             let series = string(a, "series")?;
@@ -177,7 +184,11 @@ pub fn execute(req: Request) -> Result<Value> {
             let meta = ArticleMeta {
                 schema: SCHEMA,
                 id,
-                title: String::new(),
+                title: if req.command == "intake" {
+                    string(a, "title")?.trim().into()
+                } else {
+                    String::new()
+                },
                 series: series.into(),
                 status: Status::Draft,
                 published_at: Some(
@@ -186,7 +197,11 @@ pub fn execute(req: Request) -> Result<Value> {
                         .fixed_offset(),
                 ),
                 updated_at: None,
-                summary: String::new(),
+                summary: if req.command == "intake" {
+                    string(a, "summary")?.trim().into()
+                } else {
+                    String::new()
+                },
                 slug: slug.clone(),
                 header_image: None,
                 x_caption: String::new(),
@@ -195,7 +210,19 @@ pub fn execute(req: Request) -> Result<Value> {
                 source_window: None,
             };
             let path = format!("content/{series}/{slug}.md");
-            save_article(root, &path, &article_text(&meta, "")?, &s.hash)?;
+            let body = if req.command == "intake" {
+                string(a, "body")?
+            } else {
+                ""
+            };
+            ensure!(body.len() <= 4 * 1024 * 1024, "Article exceeds 4 MiB");
+            if req.command == "intake" {
+                ensure!(
+                    !meta.title.is_empty() && !body.trim().is_empty(),
+                    "Title and article text are required"
+                );
+            }
+            save_article(root, &path, &article_text(&meta, body)?, &s.hash)?;
             Ok(json!({"article":path,"publication":inspect(root)?}))
         }
         "save-config" => {

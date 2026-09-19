@@ -40,7 +40,17 @@ ApplicationWindow {
     property var recovery: ({})
     property var pendingAction: null
     property string rollbackId: ""
+    property var queueState: ({jobs:[]})
+    property string queueId: ""
+    property string remoteSource: ""
     property var repoChoices: []
+    function queueRequest(command, args, tag) {
+        if(remoteEnabled.checked) { backend.saveWorkerSettings(workerHost.text,workerPath.text);backend.request("remote-queue",{host:workerHost.text,path:workerPath.text,command:command,args:args},tag) }
+        else backend.request(command,args,tag)
+    }
+    function showQueue() { var settings=backend.workerSettings();workerHost.text=settings.host||"";workerPath.text=settings.path||"";queueDialog.open(); queueRequest("queue-list",{},"queue-list") }
+    function smokeQueue() { intakeDialog.open(); queueDialog.open() }
+
     readonly property bool opened: !!publication.config
     readonly property bool hasArticle: articlePath !== ""
     readonly property var seriesIds: opened ? Object.keys(publication.config.series) : []
@@ -93,7 +103,12 @@ ApplicationWindow {
         function onResult(tag,v) {
             if(tag==="open"||tag==="init") { publication=v;sourceHash=v.source_hash;articlePath="";meta={};editor.text="";dirty=false;if((v.articles||[]).length)backend.request("read",{article:v.articles[0].path},"read") }
             else if(tag==="refresh") {publication=v;if(!dirty)sourceHash=v.source_hash}
-            else if(tag==="read") setDocument(v)
+            else if(tag==="queue-list"||tag==="queue-added"||tag==="queue-cancelled"||tag==="queue-uploaded") {
+                queueState=v;remoteSource=v.source_hash||"";
+                if(tag==="queue-added") { queueId=""; say("Job accepted by the queue. Its worker must be running at the scheduled time.") }
+                if(tag==="queue-uploaded") say("Reviewed source transferred. Configure the worker timer and credentials on that host before relying on scheduling.")
+            }
+            else if(tag==="read") {queueId="";setDocument(v)}
             else if(tag==="new"||tag==="import") {publication=v.publication;sourceHash=v.publication.source_hash;backend.request("read",{article:v.article},"read")}
             else if(tag==="save") {publication=v;sourceHash=v.source_hash;dirty=(editRevision!==savingRevision);if(!dirty){recoveryTimer.stop();backend.request("recovery-clear",{article:articlePath},"cleared")}else recoveryTimer.restart();say(dirty?"Saved. Newer edits remain unsaved.":"Saved locally.");if(pendingAction&&!dirty){var next=pendingAction;pendingAction=null;next()}}
             else if(tag==="render") {rendered=v.html;exportData=v.export}
@@ -122,7 +137,9 @@ ApplicationWindow {
             Label { text:"Pressroom";font.pixelSize:20;font.bold:true;Layout.leftMargin:8 }
             Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.65 }
             BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
+            Button { text:"Queue…";enabled:opened&&!backend.busy;onClicked:showQueue() }
             Button { text:"Connections…";onClicked:connectionsDialog.open() }
+            Button { text:"Add article…";enabled:opened&&!backend.busy;onClicked:guarded(function(){intakeDialog.open()}) }
             Button { text:"Save";enabled:hasArticle&&dirty;onClicked:save();Accessible.name:"Save article locally" }
             Button { text:"Preview site";enabled:opened;onClicked:guarded(function(){backend.startPreview(true)});ToolTip.text:"Open a private local preview, including drafts";ToolTip.visible:hovered }
             Button { text:"Publish…";highlighted:true;enabled:opened&&!backend.busy;onClicked:requestPublish() }
@@ -413,6 +430,47 @@ ApplicationWindow {
                 Label {text:modelData.verified_at;Layout.fillWidth:true}
                 Label {text:modelData.remote_commit;font.family:"monospace";font.pixelSize:11;wrapMode:Text.WrapAnywhere;Layout.fillWidth:true;opacity:.6}
                 Button {text:"Review rollback to this version…";onClicked:{var id=modelData.id;historyDialog.close();guarded(function(){rollbackId=id;backend.request("publish-plan",{expected_source_hash:sourceHash},"plan")})}}
+            }}}
+        }}
+    }
+    Dialog {id:intakeDialog;objectName:"intakeDialog";title:"Add article from ChatGPT";modal:true;anchors.centerIn:parent;width:720;height:Math.min(win.height-60,720);standardButtons:Dialog.Cancel
+        ColumnLayout {anchors.fill:parent
+            Label {text:"Paste the finished article as plain text or Markdown. It will be saved as a draft.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            TextField {id:intakeTitle;placeholderText:"Article title";Layout.fillWidth:true;Accessible.name:"Imported article title"}
+            TextField {id:intakeSummary;placeholderText:"Short summary";Layout.fillWidth:true;Accessible.name:"Imported article summary"}
+            ComboBox {id:intakeSeries;model:seriesIds;Accessible.name:"Article series"}
+            ScrollView {Layout.fillWidth:true;Layout.fillHeight:true;TextArea {id:intakeBody;placeholderText:"Paste your article here…";textFormat:TextEdit.PlainText;wrapMode:TextEdit.Wrap;Accessible.name:"Article text to import"}}
+            Button {text:"Save as draft";highlighted:true;enabled:intakeTitle.text.trim()!==""&&intakeBody.text.trim()!==""&&!backend.busy;onClicked:{backend.request("intake",{title:intakeTitle.text,summary:intakeSummary.text,body:intakeBody.text,series:intakeSeries.currentText,expected_source_hash:sourceHash},"import");intakeDialog.close()}}
+        }
+    }
+    Dialog {id:queueDialog;objectName:"queueDialog";title:"Publishing queue";modal:true;anchors.centerIn:parent;width:800;height:Math.min(win.height-50,820);standardButtons:Dialog.Close
+        ScrollView {anchors.fill:parent;clip:true;ColumnLayout {width:queueDialog.availableWidth-24;spacing:12
+            CheckBox {id:remoteEnabled;text:"Use an always-on SSH worker";onToggled:{queueState={jobs:[]};remoteSource="";queueId=""}}
+            Label {text:remoteEnabled.checked?"Accepted jobs run on your worker while this laptop is off. The worker needs its own credentials and timer.":"Local jobs require this computer to be awake and the worker timer to be installed. The app alone does not run the queue.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            TextField {id:workerHost;visible:remoteEnabled.checked;placeholderText:"SSH host alias, e.g. pressroom-worker";Layout.fillWidth:true;onTextChanged:{remoteSource="";queueState={jobs:[]}} Accessible.name:"Worker SSH alias"}
+            TextField {id:workerPath;visible:remoteEnabled.checked;placeholderText:"Absolute worker publication path, e.g. /srv/pressroom/publication";Layout.fillWidth:true;onTextChanged:{remoteSource="";queueState={jobs:[]}} Accessible.name:"Worker publication path"}
+            RowLayout {
+                Button {text:"Refresh queue";enabled:!backend.busy;onClicked:queueRequest("queue-list",{},"queue-list")}
+                Button {text:"Upload reviewed publication";visible:remoteEnabled.checked;enabled:!backend.busy&&!dirty;onClicked:queueRequest("queue-upload",{expected_source_hash:sourceHash,expected_remote_source_hash:remoteSource},"queue-uploaded")}
+            }
+            Label {text:queueState.worker?"Worker last ran: "+queueState.worker.last_started_at:"No worker run recorded. Install and start its timer before relying on this queue.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+            Label {text:"Schedule: "+(meta.title||"Select an article first");font.bold:true;wrapMode:Text.Wrap;Layout.fillWidth:true}
+            Label {text:"Save the article, mark it Ready and resolve Checks. Website scheduling deploys ALL Ready/Published articles together. Keep later website articles in Draft. Changes to this publication block its queued jobs; cancel and review them again.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            TextField {id:queueTime;placeholderText:"YYYY-MM-DD HH:MM";Layout.fillWidth:true;onTextChanged:queueId="";Accessible.name:"Scheduled local date and time"}
+            TextField {id:queueZone;text:publication.config?publication.config.timezone:"Europe/London";Layout.fillWidth:true;onTextChanged:queueId="";Accessible.name:"Schedule timezone"}
+            RowLayout {
+                CheckBox {id:queueWebsite;text:"Website";onToggled:queueId=""}
+                CheckBox {id:queueX;text:"X Article";onToggled:queueId=""}
+            }
+            Label {text:"Substack: prepare the draft in Publish, then finish publication or scheduling in Substack. It is not submitted to this worker.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+            Button {text:"Schedule saved version";highlighted:true;enabled:hasArticle&&!dirty&&!backend.busy&&(queueWebsite.checked||queueX.checked);onClicked:{if(!queueId)queueId=backend.newJobId();var targets=[];if(queueWebsite.checked)targets.push("website");if(queueX.checked)targets.push("x");queueRequest("queue-add",{id:queueId,article:articlePath,expected_source_hash:sourceHash,local_time:queueTime.text,timezone:queueZone.text,targets:targets},"queue-added")}}
+            Repeater {model:queueState.jobs||[];delegate:Frame {required property var modelData;Layout.fillWidth:true;ColumnLayout {width:parent.width
+                Label {text:modelData.title;wrapMode:Text.Wrap;Layout.fillWidth:true;font.bold:true}
+                Label {text:modelData.at+" · "+modelData.timezone+" · "+modelData.targets.join(", ");wrapMode:Text.Wrap;Layout.fillWidth:true}
+                Label {text:modelData.status.replace(/_/g," ")+ (modelData.message?" — "+modelData.message:"");wrapMode:Text.Wrap;Layout.fillWidth:true;color:backend.accent}
+                Label {visible:Object.keys(modelData.results||{}).length>0;text:JSON.stringify(modelData.results,null,2);textFormat:Text.PlainText;wrapMode:Text.WrapAnywhere;Layout.fillWidth:true;font.pixelSize:12}
+                Button {text:"Reconcile recorded results";visible:modelData.status==="needs_review";enabled:!backend.busy;onClicked:queueRequest("queue-reconcile",{id:modelData.id},"queue-list")}
+                Button {text:"Cancel job";visible:modelData.status==="queued"||modelData.status==="blocked";enabled:!backend.busy;onClicked:queueRequest("queue-cancel",{id:modelData.id},"queue-cancelled")}
             }}}
         }}
     }

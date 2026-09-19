@@ -28,6 +28,10 @@ enum Command {
         #[arg(long, default_value = "Author")]
         author: String,
     },
+    /// Execute due queued jobs once; use the supplied systemd timer on an always-on host.
+    Worker {
+        path: PathBuf,
+    },
     Inspect {
         path: PathBuf,
     },
@@ -109,6 +113,7 @@ fn execute(command: Command) -> Result<Value> {
             "init",
             json!({"name":name,"base_url":base_url,"author":author}),
         ),
+        Command::Worker { path } => (path, "queue-run", json!({})),
         Command::Inspect { path } => (path, "inspect", json!({})),
         Command::Validate { path } => (path, "validate", json!({})),
         Command::Build {

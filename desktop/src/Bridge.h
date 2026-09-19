@@ -25,6 +25,9 @@ public:
     QString foreground() const { return m_foreground; }
     QString previewUrl() const { return m_previewUrl; }
     Q_INVOKABLE void request(const QString &command, const QVariantMap &args={}, const QString &tag={});
+    Q_INVOKABLE QVariantMap workerSettings() const;
+    Q_INVOKABLE void saveWorkerSettings(const QString &host, const QString &path);
+    Q_INVOKABLE QString newJobId() const;
     Q_INVOKABLE QString localPath(const QUrl &url) const;
     Q_INVOKABLE void copyArticle(const QString &html,const QString &text);
     Q_INVOKABLE void copyText(const QString &text);

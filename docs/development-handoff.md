@@ -30,3 +30,33 @@ Current stack adds native OAuth/refresh, provider-schema-checked rich X requests
 ## Release blockers
 
 Unattended three-destination publishing is not claimed: Substack final publication remains browser-reviewed. Authenticated X publishing/rendering and Substack draft filling need live acceptance. Foundation, connection, and rich-X branches passed engine and native CI; the final workflow branch must pass the same gates. Real Omarchy, accessibility, and Arch install/upgrade/removal checks remain unrun. No release, repository rename or App Store submission is part of this development branch.
+
+## Scheduling follow-on (2026-09-19)
+
+Adds plain text/Markdown intake, versioned publication-owned queue, explicit
+local/SSH execution, conservative missed-job handling, named-zone scheduling,
+durable per-destination results and receipt-based reconciliation. The worker owns
+one due job per invocation and retains its queue lock through child teardown and
+final writes. Killing it leaves an attempt requiring review. The optional user
+timer is installed explicitly; no desktop autostart or service is enabled by packaging.
+
+Reproduced in this Linux development container with Rust 1.98.1: `cargo fmt --all
+--check`, `cargo clippy --workspace --all-targets --locked -- -D warnings`,
+`cargo test --workspace --locked` (29 tests), `python3 tests/scheduling.py`
+(10 tests), `python3 tests/distribution.py` (11 tests), and `python3
+tests/deployment.py` (6 tests). Source identities are recorded in
+`scheduling-inputs.sha256`; CI validates the actual PR commit, including the extended
+native dialog smoke. No local Qt tools are available. SSH/X tests use provider doubles.
+
+Not run: real worker service/SSH host, live X or Substack publication, real Omarchy
+clipboard/keyboard/theme acceptance. Substack docs links returned 403/404 from this
+environment; no supported write endpoint was verified. No claim of automatic
+Substack publishing is made. The optional systemd worker is the deployment route;
+no Kamal container deployment was added in this follow-on.
+
+Known product boundaries: website jobs deploy the whole Ready/Published set;
+source edits block queued jobs; remote receipts remain worker-owned; failed
+unconfirmed jobs require operator reconciliation; the existing Arch source pin
+still points to the prior application snapshot. See `scheduling.md` for operational
+setup and uninstall/data-preservation instructions. Neither a VPS deployment nor
+credentials were provisioned in this session.
