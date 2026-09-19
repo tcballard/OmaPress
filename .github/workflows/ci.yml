@@ -74,6 +74,7 @@ jobs:
           chown -R builder:builder "$GITHUB_WORKSPACE"
           runuser -u builder -- bash -c 'cd "$1"; makepkg --noconfirm --cleanbuild; makepkg --printsrcinfo > actual.SRCINFO; diff -u .SRCINFO actual.SRCINFO' _ "$GITHUB_WORKSPACE/packaging/arch"
       - name: Inspect, install, launch, reinstall and remove
+        shell: bash
         env:
           QT_QPA_PLATFORM: offscreen
           QT_QUICK_BACKEND: software
