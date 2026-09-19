@@ -274,12 +274,18 @@ pub fn execute(req: Request) -> Result<Value> {
             let article = parse_article(path, s.files.get(path).context("Article not found")?)?;
             Ok(serde_json::to_value(render::export_x(&s, &article))?)
         }
+        "substack-prepare" => crate::substack::prepare(
+            root,
+            string(a, "article")?,
+            string(a, "expected_source_hash")?,
+        ),
         "distribution-review" => crate::distribution::review(
             root,
             string(a, "article")?,
             string(a, "expected_source_hash")?,
             a["website"].as_bool().unwrap_or(false),
             a["x"].as_bool().unwrap_or(false),
+            a["substack"].as_bool().unwrap_or(false),
         ),
         "distribution-publish" => crate::distribution::publish_selected(
             root,
@@ -288,6 +294,7 @@ pub fn execute(req: Request) -> Result<Value> {
             a["website"].as_bool().unwrap_or(false),
             a["x"].as_bool().unwrap_or(false),
             a["expected_remote_head"].as_str().unwrap_or(""),
+            a["substack"].as_bool().unwrap_or(false),
         ),
         "distribution-plan" => crate::distribution::plan(
             root,

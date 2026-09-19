@@ -5,8 +5,8 @@ pkgdesc='Native local-first publishing for Omarchy'
 arch=('x86_64')
 url='https://github.com/tcballard/OmaPress'
 license=('MIT')
-depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl')
-optdepends=('libsecret: X OAuth token storage')
+depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl' 'libsecret' 'xdg-utils')
+optdepends=('python: register the optional Substack browser companion' 'chromium: optional Substack browser companion')
 conflicts=('omapress')
 replaces=('omapress')
 makedepends=('rust' 'cmake')
@@ -26,5 +26,9 @@ package() {
   cd "OmaPress-$pkgver"
   DESTDIR="$pkgdir" cmake --install build/desktop
   install -Dm755 target/release/pressroom "$pkgdir/usr/bin/pressroom"
+  install -Dm755 scripts/pressroom-companion "$pkgdir/usr/bin/pressroom-companion"
+  install -Dm755 scripts/install-companion.py "$pkgdir/usr/share/pressroom/install-companion.py"
+  install -d "$pkgdir/usr/share/pressroom/companion"
+  cp -r companion/* "$pkgdir/usr/share/pressroom/companion/"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/pressroom/LICENSE"
 }

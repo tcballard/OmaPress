@@ -20,6 +20,12 @@ int main(int argc,char **argv){
     QObject::connect(&engine,&QQmlApplicationEngine::objectCreationFailed,&app,[]{QCoreApplication::exit(1);},Qt::QueuedConnection);
     engine.load(QUrl("qrc:/qml/Main.qml"));if(engine.rootObjects().isEmpty())return 1;
     if(args.contains("--smoke"))QTimer::singleShot(1500,&app,&QCoreApplication::quit);
+    if(args.contains("--dialogs-smoke")) {
+        auto root=engine.rootObjects().first();
+        QTimer::singleShot(200,&app,[root]{QMetaObject::invokeMethod(root,"smokeConnections");});
+        QTimer::singleShot(600,&app,[root,&app]{auto dialog=root->findChild<QObject*>("connectionsDialog");if(!dialog||!dialog->property("visible").toBool()){app.exit(1);return;}QMetaObject::invokeMethod(root,"smokeDistribution");});
+        QTimer::singleShot(1000,&app,[root,&app]{auto dialog=root->findChild<QObject*>("distributionDialog");app.exit(dialog&&dialog->property("visible").toBool()?0:1);});
+    }
     const int screenshotIndex=args.indexOf("--screenshot");
     if(screenshotIndex>=0&&screenshotIndex+1<args.size())QTimer::singleShot(2000,&app,[&]{auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(window)window->grabWindow().save(args.at(screenshotIndex+1));app.quit();});
     return app.exec();
