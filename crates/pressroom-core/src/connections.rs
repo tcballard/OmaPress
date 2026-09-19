@@ -157,11 +157,7 @@ fn callback(request: &str, state: &str) -> Result<String> {
 pub fn connect(client: &str) -> Result<Value> {
     let _lock = crate::storage::lock(&crate::substack::directory()?)?;
     ensure!(
-        !client.is_empty()
-            && client.len() < 1024
-            && client
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b"-_".contains(&b)),
+        !client.is_empty() && client.len() < 1024 && client.bytes().all(|b| b.is_ascii_graphic()),
         "Enter a valid public Native App client ID"
     );
     let listener = TcpListener::bind("127.0.0.1:39123")

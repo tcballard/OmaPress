@@ -47,7 +47,10 @@ $('fill').onclick=()=>action(async()=>{
 });
 $('confirm').onclick=()=>action(async()=>{
     // Explicit user confirmation, never inferred from a successful paste.
-    await native('confirm',{id:selected(),url:tab.url});
+    const current=await chrome.tabs.get(tab.id);
+    const url=new URL(current.url);
+    if(url.protocol!=='https:'||!url.pathname.startsWith('/p/'))throw Error('Open the published article page before recording its URL.');
+    await native('confirm',{id:selected(),url:current.url});
     $('status').textContent='Published URL recorded as confirmed by you. Refresh the article’s destination status in Pressroom.';
 });
 $('remove').onclick=()=>action(async()=>{await native('remove',{id:selected()});await refresh();});
