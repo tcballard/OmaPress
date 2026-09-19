@@ -31,3 +31,11 @@ remain outside that CI evidence. No signing key or repository deployment is used
 Pacman removal preserves authored publications and private outbox state. Unregister
 the optional browser host using the installed helper before removing the package;
 remove the browser extension separately. See `docs/substack-companion.md`.
+
+Namcap errors fail CI and its full report is attached to the unsigned package
+artifact. Warnings for the optional Python registration helper and external
+commands (`git`, `gh`, `curl`, `secret-tool`, `xdg-open`) require contextual review:
+they are runtime integrations, not necessarily linked ELF dependencies. Qt Wayland
+is needed on the actual desktop even though CI launches with the offscreen plugin.
+The recipe disables empty debug-package generation because the Rust release
+profile already strips its binaries.

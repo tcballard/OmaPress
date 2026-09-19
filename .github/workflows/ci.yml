@@ -82,8 +82,9 @@ jobs:
           namcap PKGBUILD
           package=$(find . -maxdepth 1 -name 'pressroom-*.pkg.tar.zst' ! -name '*debug*' -print -quit)
           test -n "$package"
-          namcap "$package"
-          bsdtar -tf "$package" > package-files.txt
+          namcap "$package" | tee namcap-report.txt
+          python -c 'from pathlib import Path; assert not any(" E: " in line for line in Path("namcap-report.txt").read_text().splitlines()), "namcap reported packaging errors"'
+          bsdtar -tvf "$package" > package-files.txt
           pacman -U --noconfirm "$package"
           runuser -u builder -- env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software pressroom-desktop --dialogs-smoke
           runuser -u builder -- python "$GITHUB_WORKSPACE/tests/installed_companion.py" /usr
@@ -98,3 +99,4 @@ jobs:
           path: |
             packaging/arch/*.pkg.tar.zst
             packaging/arch/package-files.txt
+            packaging/arch/namcap-report.txt

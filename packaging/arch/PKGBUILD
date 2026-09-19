@@ -1,3 +1,4 @@
+# Maintainer: Tom Ballard (tcballard)
 pkgname=pressroom
 pkgver=0.1.0rc1.r20260919
 _commit=6738df25df0ee11f0916c73bfc7de105010cb099
@@ -6,10 +7,11 @@ pkgdesc='Native local-first publishing for Omarchy'
 arch=('x86_64')
 url='https://github.com/tcballard/OmaPress'
 license=('MIT')
-depends=('glibc' 'gcc-libs' 'qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl' 'libsecret' 'xdg-utils')
+depends=('glibc' 'libgcc' 'libstdc++' 'bash' 'hicolor-icon-theme' 'qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl' 'libsecret' 'xdg-utils')
 optdepends=('python: register the optional Substack browser companion' 'chromium: optional Substack browser companion')
 conflicts=('omapress')
 replaces=('omapress')
+options=('!debug')
 makedepends=('rust' 'cmake')
 checkdepends=('python' 'desktop-file-utils')
 # Development snapshot: immutable source, not an upstream stable release.
