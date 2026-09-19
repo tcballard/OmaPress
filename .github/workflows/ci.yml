@@ -55,6 +55,8 @@ jobs:
           bundle=$(find dist -mindepth 1 -maxdepth 1 -type d -name 'pressroom-*' -print -quit)
           sh "$bundle/install.sh" "$RUNNER_TEMP/pressroom-installed"
           "$RUNNER_TEMP/pressroom-installed/bin/pressroom" --version
+          test -f "$RUNNER_TEMP/pressroom-installed/share/pressroom/worker/pressroom-worker.service"
+          test -f "$RUNNER_TEMP/pressroom-installed/share/doc/pressroom/substack-gateway.md"
           python3 tests/installed_companion.py "$RUNNER_TEMP/pressroom-installed"
           QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software "$RUNNER_TEMP/pressroom-installed/bin/pressroom-desktop" --smoke
       - uses: actions/upload-artifact@v4
@@ -74,7 +76,7 @@ jobs:
         run: |
           useradd --create-home builder
           chown -R builder:builder "$GITHUB_WORKSPACE"
-          runuser -u builder -- bash -c 'cd "$1"; makepkg --noconfirm --cleanbuild; makepkg --printsrcinfo > actual.SRCINFO; diff -u .SRCINFO actual.SRCINFO' _ "$GITHUB_WORKSPACE/packaging/arch"
+          runuser -u builder -- bash -c 'set -euo pipefail; cd "$1"; makepkg --noconfirm --cleanbuild; makepkg --printsrcinfo > actual.SRCINFO; diff -u .SRCINFO actual.SRCINFO' _ "$GITHUB_WORKSPACE/packaging/arch"
       - name: Inspect, install, launch, reinstall and remove
         shell: bash
         env:
@@ -87,10 +89,17 @@ jobs:
           test -n "$package"
           namcap "$package" | tee namcap-report.txt
           python -c 'from pathlib import Path; assert not any(" E: " in line for line in Path("namcap-report.txt").read_text().splitlines()), "namcap reported packaging errors"'
+          sha256sum "$package" > SHA256SUMS
           bsdtar -tvf "$package" > package-files.txt
+          # The minimal Arch image excludes documentation on installation.
+          # Retain it here to validate the complete package payload.
+          sed -i '/^NoExtract/d' /etc/pacman.conf
           pacman -U --noconfirm "$package"
           runuser -u builder -- env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software pressroom-desktop --dialogs-smoke
           runuser -u builder -- python "$GITHUB_WORKSPACE/tests/installed_companion.py" /usr
+          test -f /usr/share/pressroom/worker/pressroom-worker.timer
+          test -f /usr/share/doc/pressroom/substack-gateway.md
+          grep -q '^ExecStart=/usr/bin/pressroom worker ' /usr/share/pressroom/worker/pressroom-worker.service
           pacman -U --noconfirm "$package"
           pacman -R --noconfirm pressroom
           test ! -e /usr/bin/pressroom
@@ -101,5 +110,6 @@ jobs:
           name: pressroom-arch-unsigned
           path: |
             packaging/arch/*.pkg.tar.zst
+            packaging/arch/SHA256SUMS
             packaging/arch/package-files.txt
             packaging/arch/namcap-report.txt

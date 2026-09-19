@@ -10,6 +10,7 @@ for src,name in [(root/'target/release/pressroom','pressroom'),(root/'build/desk
 size=sum(p.stat().st_size for p in (bundle/'bin').iterdir())
 if size>=10_000_000:raise SystemExit(f'Executable size gate failed: {size} bytes')
 shutil.copytree(root/'desktop/resources',bundle/'share/pressroom')
+shutil.copytree(root/'deploy/worker',bundle/'share/pressroom/worker')
 shutil.copytree(root/'companion',bundle/'share/pressroom/companion')
 shutil.copy2(root/'scripts/pressroom-companion',bundle/'bin/pressroom-companion')
 shutil.copy2(root/'scripts/install-companion.py',bundle/'share/pressroom/install-companion.py')

@@ -80,6 +80,14 @@ default. This release does not automate remote OAuth enrollment.
 
 ## Install the optional user timer
 
+Packages include templates in `<prefix>/share/pressroom/worker` and documentation
+in `<prefix>/share/doc/pressroom` (`/usr` for Arch, normally `~/.local` for the bundle).
+Copy those templates instead of `deploy/worker/*` when using an installed package.
+The Arch template uses `/usr/bin/pressroom`; the bundle/source template uses
+`/usr/local/bin/pressroom`. Before enabling the timer, set `ExecStart` in your copied
+service to the absolute installed CLI path if different. Templates are never enabled
+automatically.
+
 Run as the worker user, from the matching source checkout:
 
 ```sh
@@ -113,5 +121,5 @@ Automated tests use real CLI processes and filesystem operations with SSH/X doub
 They cover intake, queue reopening, duplicate IDs, cancellation, DST, corrupt/newer
 state, interruption, uncertain provider outcomes, source changes, private credentials
 and remote source replacement. These are not live provider/VPS acceptance tests.
-The existing Arch recipe remains pinned to the earlier reviewed release candidate;
-build this branch for these new features until a separate package revision is cut.
+Arch package revision 2 includes the merged queue and gateway implementation.
+It is still a development snapshot, not a live-provider-qualified stable release.

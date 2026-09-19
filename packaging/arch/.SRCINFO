@@ -1,7 +1,7 @@
 pkgbase = pressroom
 	pkgdesc = Native local-first publishing for Omarchy
 	pkgver = 0.1.0rc1.r20260919
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/tcballard/OmaPress
 	arch = x86_64
 	license = MIT
@@ -27,7 +27,7 @@ pkgbase = pressroom
 	conflicts = omapress
 	replaces = omapress
 	options = !debug
-	source = pressroom-6738df25df0ee11f0916c73bfc7de105010cb099.tar.gz::https://codeload.github.com/tcballard/OmaPress/tar.gz/6738df25df0ee11f0916c73bfc7de105010cb099
-	sha256sums = 5cc435bcc8714b806d9403975eaf142dfc765d7b3907fd9bd9ced26d2f345aa7
+	source = pressroom-5a2a681598d41a45d6b732cfa6be80045b40671c.tar.gz::https://codeload.github.com/tcballard/OmaPress/tar.gz/5a2a681598d41a45d6b732cfa6be80045b40671c
+	sha256sums = 66ce71f0a13f106d82f6885bbc5b1951d063066c27803eb1170f0199613b91f3
 
 pkgname = pressroom

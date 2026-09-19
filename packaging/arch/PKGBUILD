@@ -1,8 +1,8 @@
 # Maintainer: Tom Ballard (tcballard)
 pkgname=pressroom
 pkgver=0.1.0rc1.r20260919
-_commit=6738df25df0ee11f0916c73bfc7de105010cb099
-pkgrel=1
+_commit=5a2a681598d41a45d6b732cfa6be80045b40671c
+pkgrel=2
 pkgdesc='Native local-first publishing for Omarchy'
 arch=('x86_64')
 url='https://github.com/tcballard/OmaPress'
@@ -16,7 +16,7 @@ makedepends=('rust' 'cmake')
 checkdepends=('python' 'desktop-file-utils')
 # Development snapshot: immutable source, not an upstream stable release.
 source=("$pkgname-$_commit.tar.gz::https://codeload.github.com/tcballard/OmaPress/tar.gz/$_commit")
-sha256sums=('5cc435bcc8714b806d9403975eaf142dfc765d7b3907fd9bd9ced26d2f345aa7')
+sha256sums=('66ce71f0a13f106d82f6885bbc5b1951d063066c27803eb1170f0199613b91f3')
 build() {
   cd "OmaPress-$_commit"
   cargo build --release --locked
@@ -27,6 +27,8 @@ check() {
   cd "OmaPress-$_commit"
   cargo test --workspace --locked
   cargo build --workspace --locked
+  python tests/scheduling.py
+  python tests/substack_gateway.py
   python tests/distribution.py
   python tests/deployment.py
   python tests/preview_http.py
@@ -40,5 +42,9 @@ package() {
   install -Dm755 scripts/install-companion.py "$pkgdir/usr/share/pressroom/install-companion.py"
   install -d "$pkgdir/usr/share/pressroom/companion"
   cp -r companion/* "$pkgdir/usr/share/pressroom/companion/"
+  install -d "$pkgdir/usr/share/pressroom/worker" "$pkgdir/usr/share/doc/pressroom"
+  install -m644 deploy/worker/* "$pkgdir/usr/share/pressroom/worker/"
+  sed -i 's|/usr/local/bin/pressroom|/usr/bin/pressroom|' "$pkgdir/usr/share/pressroom/worker/pressroom-worker.service"
+  cp -r docs/* "$pkgdir/usr/share/doc/pressroom/"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/pressroom/LICENSE"
 }
