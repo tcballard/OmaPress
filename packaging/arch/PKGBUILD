@@ -6,7 +6,7 @@ pkgdesc='Native local-first publishing for Omarchy'
 arch=('x86_64')
 url='https://github.com/tcballard/OmaPress'
 license=('MIT')
-depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl' 'libsecret' 'xdg-utils')
+depends=('glibc' 'gcc-libs' 'qt6-base' 'qt6-declarative' 'qt6-wayland' 'git' 'github-cli' 'curl' 'libsecret' 'xdg-utils')
 optdepends=('python: register the optional Substack browser companion' 'chromium: optional Substack browser companion')
 conflicts=('omapress')
 replaces=('omapress')
@@ -18,7 +18,7 @@ sha256sums=('5cc435bcc8714b806d9403975eaf142dfc765d7b3907fd9bd9ced26d2f345aa7')
 build() {
   cd "OmaPress-$_commit"
   cargo build --release --locked
-  cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_RPATH=ON
   cmake --build build/desktop --parallel 2
 }
 check() {
