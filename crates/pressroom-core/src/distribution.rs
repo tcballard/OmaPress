@@ -90,7 +90,10 @@ pub fn plan(root: &Path, path: &str, expected: &str) -> Result<Value> {
         .into_iter()
         .filter(|d| d.severity == "error")
         .collect();
-    let x = crate::x_article::payload(&a);
+    let x = crate::x_article::payload(&a).and_then(|p| {
+        crate::x_article::media_paths(&s, &p)?;
+        Ok(p)
+    });
     Ok(
         json!({"article":path,"article_id":a.meta.id,"article_hash":a.hash,"source_hash":s.hash,
         "title":a.meta.title,"canonical_url":format!("{}/{}/{}/",s.config.base_url.trim_end_matches('/'),route.route.trim_matches('/'),a.meta.slug),
@@ -152,7 +155,8 @@ pub fn x_action(root: &Path, path: &str, expected: &str, publish: bool) -> Resul
             .any(|d| d.severity == "error"),
         "Resolve publication checks first"
     );
-    let payload = crate::x_article::payload(&a)?;
+    let mut payload = crate::x_article::payload(&a)?;
+    crate::x_article::media_paths(&s, &payload)?;
     let mut l = load(root)?;
     let id = a.meta.id.to_string();
     let previous = l.entries.get(&id).and_then(|m| m.get("x")).cloned();
@@ -181,6 +185,7 @@ pub fn x_action(root: &Path, path: &str, expected: &str, publish: bool) -> Resul
         updated_at: String::new(),
     });
     if r.remote_id.is_empty() {
+        crate::x_article::upload_media(&s, &token, &mut payload)?;
         r.status = "unknown".into();
         r.updated_at = chrono::Utc::now().to_rfc3339();
         l.entries
