@@ -15,3 +15,5 @@ pub mod connections;
 pub mod substack;
 
 pub mod schedule;
+
+pub mod substack_gateway;

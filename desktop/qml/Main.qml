@@ -34,6 +34,8 @@ ApplicationWindow {
     property string rendered: ""
     property var exportData: ({html:"",text:"",caption:"",warnings:[]})
     property var publishPlan: ({})
+    property var gatewayReceipt: ({})
+    property var gatewayConnection: ({})
     property var xConnection: ({})
     property var distribution: ({})
     property var distributionReview: ({})
@@ -49,7 +51,7 @@ ApplicationWindow {
         else backend.request(command,args,tag)
     }
     function showQueue() { var settings=backend.workerSettings();workerHost.text=settings.host||"";workerPath.text=settings.path||"";queueDialog.open(); queueRequest("queue-list",{},"queue-list") }
-    function smokeQueue() { intakeDialog.open(); queueDialog.open() }
+    function smokeQueue() { intakeDialog.open(); queueDialog.open(); gatewayConfigDialog.open() }
 
     readonly property bool opened: !!publication.config
     readonly property bool hasArticle: articlePath !== ""
@@ -98,17 +100,19 @@ ApplicationWindow {
 
     Connections {
         target: backend
-        function onFailed(tag,error) { say(error,true) }
+        function onFailed(tag,error) { if(tag==="gateway-connect"){gatewaySession.text="";gatewayConnectSession.text=""}say(error,true) }
         function onArrayResult(tag,value) { if(tag==="repos")repoChoices=value }
         function onResult(tag,v) {
             if(tag==="open"||tag==="init") { publication=v;sourceHash=v.source_hash;articlePath="";meta={};editor.text="";dirty=false;if((v.articles||[]).length)backend.request("read",{article:v.articles[0].path},"read") }
             else if(tag==="refresh") {publication=v;if(!dirty)sourceHash=v.source_hash}
+            else if(tag==="gateway-connect"||tag==="gateway-status") {gatewayConnection=v;gatewaySession.text="";gatewayConnectSession.text="";say(v.message||"Gateway configuration loaded.")}
+            else if(tag==="gateway-action") {gatewayReceipt=v.receipt;gatewayReviewed.checked=false;say(v.message||"Substack scheduling receipt recorded.");backend.request("distribution-plan",distributionArgs(),"x-action")}
             else if(tag==="queue-list"||tag==="queue-added"||tag==="queue-cancelled"||tag==="queue-uploaded") {
                 queueState=v;remoteSource=v.source_hash||"";
                 if(tag==="queue-added") { queueId=""; say("Job accepted by the queue. Its worker must be running at the scheduled time.") }
                 if(tag==="queue-uploaded") say("Reviewed source transferred. Configure the worker timer and credentials on that host before relying on scheduling.")
             }
-            else if(tag==="read") {queueId="";setDocument(v)}
+            else if(tag==="read") {queueId="";gatewayReceipt={};gatewayReviewed.checked=false;setDocument(v)}
             else if(tag==="new"||tag==="import") {publication=v.publication;sourceHash=v.publication.source_hash;backend.request("read",{article:v.article},"read")}
             else if(tag==="save") {publication=v;sourceHash=v.source_hash;dirty=(editRevision!==savingRevision);if(!dirty){recoveryTimer.stop();backend.request("recovery-clear",{article:articlePath},"cleared")}else recoveryTimer.restart();say(dirty?"Saved. Newer edits remain unsaved.":"Saved locally.");if(pendingAction&&!dirty){var next=pendingAction;pendingAction=null;next()}}
             else if(tag==="render") {rendered=v.html;exportData=v.export}
@@ -120,7 +124,7 @@ ApplicationWindow {
             else if(tag==="substack-prepare") {say(v.message);backend.request("distribution-plan",distributionArgs(),"x-action")}
             else if(tag==="distribution-review") {distributionReview=v;batchConfirm.open()}
             else if(tag==="distribution-publish") {distribution=v.distribution;var errors=v.results.filter(function(r){return !!r.error});say(errors.length?errors.map(function(r){return r.target+": "+r.error}).join("\n"):"Publishing finished. Check the recorded destination results.",errors.length>0);backend.request("inspect",{},"refresh")}
-            else if(tag==="distribution") {distribution=v;distributionDialog.open()}
+            else if(tag==="distribution") {distribution=v;var receipt=(v.targets||[]).filter(function(t){return t.target==="substack"})[0];gatewayReceipt=receipt&&receipt.receipt?receipt.receipt:{};gatewayReviewed.checked=false;distributionDialog.open()}
             else if(tag==="x-action"||tag==="confirm-destination") {distribution=v;say(tag==="x-action"?"Destination status refreshed.":"Published URL recorded as confirmed by you.")}
             else if(tag==="plan") {publishPlan=v;publishDialog.open()}
             else if(tag==="publish"||tag==="recheck"||tag==="rollback") {say(v.status==="published"?"Publication verified and live.":(v.message||"Deployment needs a recheck."),v.status!=="published");backend.request("inspect",{},"refresh");if(distributionDialog.visible)backend.request("distribution-plan",distributionArgs(),"x-action")}
@@ -322,6 +326,7 @@ ApplicationWindow {
 
     Dialog {id:connectionsDialog;objectName:"connectionsDialog";title:"Connections";modal:true;anchors.centerIn:parent;width:600;standardButtons:Dialog.Close
         ColumnLayout {anchors.fill:parent;spacing:12
+            Button {text:"Configure Substack Gateway…";onClicked:gatewayConfigDialog.open()}
             Label {text:"X Articles";font.pixelSize:22;font.bold:true}
             Label {text:"Sign in with a public Native App client ID from the X developer console. Register this exact callback URL:";wrapMode:Text.Wrap;Layout.fillWidth:true}
             TextField {text:"http://127.0.0.1:39123/callback";readOnly:true;Layout.fillWidth:true;Accessible.name:"X callback URL"}
@@ -364,6 +369,29 @@ ApplicationWindow {
                     Button {text:"Copy rich article";enabled:!!distribution.x;onClicked:{backend.copyArticle(distribution.x.html,distribution.x.text);say("Rich article copied. Upload artwork separately in X.")}}
                 }
                 Button {text:"Open X Articles";onClicked:backend.openUrl("https://x.com/compose/articles")}
+                Label {text:"Substack · API scheduling (optional)";font.bold:true}
+                Label {text:"Uses your self-hosted Substack Gateway and session credentials. Prepare a draft, inspect its formatting in Substack, then submit the release time. Substack handles an accepted schedule while your laptop is off.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+                RowLayout {
+                    Button {text:"Configure gateway…";onClicked:gatewayConfigDialog.open()}
+                    Button {text:"Prepare API draft";enabled:distribution.ready&&!backend.busy;onClicked:backend.request("substack-gateway-draft",distributionArgs(),"gateway-action")}
+                    Button {text:"Open Substack draft editor";enabled:!!gatewayReceipt.url;onClicked:backend.openUrl(gatewayReceipt.url)}
+                }
+                Label {text:gatewayReceipt.status?"Substack: "+gatewayReceipt.status.replace(/_/g," "):"No API draft prepared";wrapMode:Text.Wrap;Layout.fillWidth:true;color:backend.accent}
+                Label {visible:!!gatewayReceipt.scheduled_at;text:"Release: "+(gatewayReceipt.scheduled_at||"")+" · post: "+(gatewayReceipt.post_audience||"")+" · email: "+(gatewayReceipt.email_audience||"");wrapMode:Text.Wrap;Layout.fillWidth:true}
+                TextField {id:gatewayTime;placeholderText:"Release: YYYY-MM-DD HH:MM";Layout.fillWidth:true;Accessible.name:"Substack release local time"}
+                TextField {id:gatewayZone;text:publication.config?publication.config.timezone:"Europe/London";Layout.fillWidth:true;Accessible.name:"Substack release timezone"}
+                RowLayout {
+                    Label {text:"Post audience"}
+                    ComboBox {id:gatewayPostAudience;model:["everyone","only_paid"];Accessible.name:"Substack post audience"}
+                    Label {text:"Email audience"}
+                    ComboBox {id:gatewayEmailAudience;model:["everyone","only_paid"];Accessible.name:"Substack email audience"}
+                }
+                CheckBox {id:gatewayReviewed;text:"I reviewed the Substack draft and the audience/email choices";enabled:gatewayReceipt.status==="gateway_draft"}
+                RowLayout {
+                    Button {text:"Schedule on Substack";highlighted:true;enabled:gatewayReviewed.checked&&gatewayReceipt.status==="gateway_draft"&&!backend.busy;onClicked:{var a=distributionArgs();a.local_time=gatewayTime.text;a.timezone=gatewayZone.text;a.post_audience=gatewayPostAudience.currentText;a.email_audience=gatewayEmailAudience.currentText;a.reviewed_draft_hash=gatewayReceipt.review_hash;a.reviewed_in_substack=gatewayReviewed.checked;backend.request("substack-gateway-schedule",a,"gateway-action")}}
+                    Button {text:"Cancel Substack schedule";enabled:gatewayReceipt.status==="scheduled"&&!backend.busy;onClicked:backend.request("substack-gateway-cancel",distributionArgs(),"gateway-action")}
+                }
+                Label {text:"An acknowledged schedule is not proof of publication. If an operation times out, inspect Substack before proceeding. Cover artwork is placed at the top of the article body; check the separate social preview in Substack.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
                 Label {text:"Substack · browser companion";font.bold:true}
                 Label {text:"Prepare the saved article and artwork, then use the Pressroom companion to fill a blank Substack draft. Review the audience and email delivery in Substack before publishing.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
                 Button {text:"Prepare Substack draft";enabled:distribution.ready&&!backend.busy;onClicked:backend.request("substack-prepare",distributionArgs())}
@@ -433,6 +461,21 @@ ApplicationWindow {
             }}}
         }}
     }
+    Dialog {id:gatewayConfigDialog;objectName:"gatewayConfigDialog";title:"Substack Gateway connection";modal:true;anchors.centerIn:parent;width:620;standardButtons:Dialog.Close
+        ColumnLayout {width:parent.width;spacing:10
+            Label {text:"Connect your own Substack Gateway OSS server. It receives your Substack session credentials. Use HTTPS or a local loopback server. Credentials are stored in your keyring.";wrapMode:Text.Wrap;Layout.fillWidth:true}
+            TextField {id:gatewayUrl;placeholderText:"https://your-gateway.example or http://127.0.0.1:5001";Layout.fillWidth:true;Accessible.name:"Gateway URL"}
+            TextField {id:gatewayPublication;placeholderText:"https://your-publication.substack.com";Layout.fillWidth:true;Accessible.name:"Substack publication URL"}
+            TextField {id:gatewaySession;placeholderText:"substack.sid session value";echoMode:TextInput.Password;Layout.fillWidth:true;Accessible.name:"Substack session credential"}
+            TextField {id:gatewayConnectSession;placeholderText:"connect.sid session value (if available)";echoMode:TextInput.Password;Layout.fillWidth:true;Accessible.name:"Substack connect session credential"}
+            RowLayout {
+                Button {text:"Save connection";enabled:!backend.busy;onClicked:backend.request("substack-gateway-connect",{gateway_url:gatewayUrl.text,publication_url:gatewayPublication.text,substack_sid:gatewaySession.text,connect_sid:gatewayConnectSession.text},"gateway-connect")}
+                Button {text:"Show saved connection";enabled:!backend.busy;onClicked:backend.request("substack-gateway-status",{},"gateway-status")}
+            }
+            Label {text:gatewayConnection.configured?gatewayConnection.publication_url+" via "+gatewayConnection.gateway_url:"No configuration loaded";textFormat:Text.PlainText;wrapMode:Text.Wrap;Layout.fillWidth:true}
+        }
+        onClosed:{gatewaySession.text="";gatewayConnectSession.text=""}
+    }
     Dialog {id:intakeDialog;objectName:"intakeDialog";title:"Add article from ChatGPT";modal:true;anchors.centerIn:parent;width:720;height:Math.min(win.height-60,720);standardButtons:Dialog.Cancel
         ColumnLayout {anchors.fill:parent
             Label {text:"Paste the finished article as plain text or Markdown. It will be saved as a draft.";wrapMode:Text.Wrap;Layout.fillWidth:true}
@@ -462,7 +505,7 @@ ApplicationWindow {
                 CheckBox {id:queueWebsite;text:"Website";onToggled:queueId=""}
                 CheckBox {id:queueX;text:"X Article";onToggled:queueId=""}
             }
-            Label {text:"Substack: prepare the draft in Publish, then finish publication or scheduling in Substack. It is not submitted to this worker.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+            Label {text:"Substack: use API scheduling in Publish, or the browser handoff. Substack handles an accepted schedule; it is not submitted to this worker.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
             Button {text:"Schedule saved version";highlighted:true;enabled:hasArticle&&!dirty&&!backend.busy&&(queueWebsite.checked||queueX.checked);onClicked:{if(!queueId)queueId=backend.newJobId();var targets=[];if(queueWebsite.checked)targets.push("website");if(queueX.checked)targets.push("x");queueRequest("queue-add",{id:queueId,article:articlePath,expected_source_hash:sourceHash,local_time:queueTime.text,timezone:queueZone.text,targets:targets},"queue-added")}}
             Repeater {model:queueState.jobs||[];delegate:Frame {required property var modelData;Layout.fillWidth:true;ColumnLayout {width:parent.width
                 Label {text:modelData.title;wrapMode:Text.Wrap;Layout.fillWidth:true;font.bold:true}

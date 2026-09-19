@@ -69,20 +69,7 @@ pub fn enqueue(root: &Path, args: Value) -> Result<Value> {
         .as_str()
         .context("Missing source hash")?;
     let timezone = args["timezone"].as_str().unwrap_or("UTC");
-    let zone: chrono_tz::Tz = timezone.parse().context("Unknown timezone")?;
-    let at = if let Some(local) = args["local_time"].as_str() {
-        use chrono::TimeZone;
-        let time = chrono::NaiveDateTime::parse_from_str(local, "%Y-%m-%d %H:%M")
-            .context("Use YYYY-MM-DD HH:MM")?;
-        zone.from_local_datetime(&time).single().context("This local time is ambiguous or does not exist because clocks change; choose another time or use an explicit UTC offset")?.with_timezone(&Utc)
-    } else {
-        DateTime::parse_from_rfc3339(
-            args["at"]
-                .as_str()
-                .context("Use an ISO date with UTC offset")?,
-        )?
-        .with_timezone(&Utc)
-    };
+    let at = parse_time(&args)?;
     let targets: Vec<String> = serde_json::from_value(args["targets"].clone())?;
     ensure!(
         !targets.is_empty() && targets.len() <= 2,
@@ -516,4 +503,23 @@ pub fn reconcile(root: &Path, id: &str) -> Result<Value> {
             .into();
     save(root, &q)?;
     list(root)
+}
+
+pub(crate) fn parse_time(args: &Value) -> Result<DateTime<Utc>> {
+    let timezone = args["timezone"].as_str().unwrap_or("UTC");
+    let zone: chrono_tz::Tz = timezone.parse().context("Unknown timezone")?;
+    let at = if let Some(local) = args["local_time"].as_str() {
+        use chrono::TimeZone;
+        let time = chrono::NaiveDateTime::parse_from_str(local, "%Y-%m-%d %H:%M")
+            .context("Use YYYY-MM-DD HH:MM")?;
+        zone.from_local_datetime(&time).single().context("This local time is ambiguous or does not exist because clocks change; choose another time or use an explicit UTC offset")?.with_timezone(&Utc)
+    } else {
+        DateTime::parse_from_rfc3339(
+            args["at"]
+                .as_str()
+                .context("Use an ISO date with UTC offset")?,
+        )?
+        .with_timezone(&Utc)
+    };
+    Ok(at)
 }

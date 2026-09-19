@@ -22,6 +22,7 @@ jobs:
       - run: cargo build --workspace --locked
       - run: python3 tests/distribution.py
       - run: python3 tests/scheduling.py
+      - run: python3 tests/substack_gateway.py
       - run: node --check companion/popup.js && node --check companion/editor.js
       - run: python3 -m py_compile scripts/install-companion.py
       - run: python3 tests/deployment.py

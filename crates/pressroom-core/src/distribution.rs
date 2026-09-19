@@ -14,6 +14,16 @@ pub struct Receipt {
     pub updated_at: String,
     #[serde(default)]
     pub account_id: String,
+    #[serde(default)]
+    pub review_hash: String,
+    #[serde(default)]
+    pub schedule_hash: String,
+    #[serde(default)]
+    pub scheduled_at: String,
+    #[serde(default)]
+    pub post_audience: String,
+    #[serde(default)]
+    pub email_audience: String,
 }
 #[derive(Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -140,6 +150,11 @@ pub fn confirm(root: &Path, path: &str, expected: &str, target: &str, url: &str)
             remote_id: String::new(),
             updated_at: chrono::Utc::now().to_rfc3339(),
             account_id: String::new(),
+            review_hash: String::new(),
+            schedule_hash: String::new(),
+            scheduled_at: String::new(),
+            post_audience: String::new(),
+            email_audience: String::new(),
         },
     );
     save(root, &l)?;
@@ -193,6 +208,11 @@ pub fn x_action(root: &Path, path: &str, expected: &str, publish: bool) -> Resul
         remote_id: String::new(),
         updated_at: String::new(),
         account_id: account.clone(),
+        review_hash: String::new(),
+        schedule_hash: String::new(),
+        scheduled_at: String::new(),
+        post_audience: String::new(),
+        email_audience: String::new(),
     });
     if r.remote_id.is_empty() {
         crate::x_article::upload_media(&s, &token, &mut payload)?;
@@ -342,7 +362,30 @@ pub(crate) fn substack_prepared(root: &Path, a: &Article, id: &str) -> Result<()
             remote_id: id.into(),
             updated_at: chrono::Utc::now().to_rfc3339(),
             account_id: String::new(),
+            review_hash: String::new(),
+            schedule_hash: String::new(),
+            scheduled_at: String::new(),
+            post_audience: String::new(),
+            email_audience: String::new(),
         },
     );
+    save(root, &ledger)
+}
+
+// The gateway caller retains the publication lock across remote work and receipt writes.
+pub(crate) fn gateway_receipt(root: &Path, id: &str) -> Result<Option<Receipt>> {
+    Ok(load(root)?
+        .entries
+        .get(id)
+        .and_then(|e| e.get("substack"))
+        .cloned())
+}
+pub(crate) fn save_gateway_receipt(root: &Path, id: &str, receipt: Receipt) -> Result<()> {
+    let mut ledger = load(root)?;
+    ledger
+        .entries
+        .entry(id.into())
+        .or_default()
+        .insert("substack".into(), receipt);
     save(root, &ledger)
 }

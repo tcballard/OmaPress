@@ -81,6 +81,11 @@ pub fn execute(req: Request) -> Result<Value> {
             inspect(&s.root)
         }
         "inspect" => inspect(root),
+        "substack-gateway-connect" => crate::substack_gateway::connect(a.clone()),
+        "substack-gateway-status" => crate::substack_gateway::status(),
+        "substack-gateway-draft" | "substack-gateway-schedule" | "substack-gateway-cancel" => {
+            crate::substack_gateway::action(root, &req.command, a)
+        }
         "queue-receive" => crate::schedule::receive(root, a),
         "queue-reconcile" => crate::schedule::reconcile(root, string(a, "id")?),
         "queue-list" => crate::schedule::list(root),

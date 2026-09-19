@@ -60,3 +60,24 @@ unconfirmed jobs require operator reconciliation; the existing Arch source pin
 still points to the prior application snapshot. See `scheduling.md` for operational
 setup and uninstall/data-preservation instructions. Neither a VPS deployment nor
 credentials were provisioned in this session.
+
+
+## Substack Gateway follow-on (2026-09-19)
+
+The user supplied the TypeScript Substack API repository. Its maintained gateway
+successor at `8f4dc234b6bc8db04bbfeb407b2ee85bb69d16fe` includes the required draft,
+prepublish, schedule and unschedule contracts. Adds an optional Rust client with
+native connection/review controls, private session storage, local-image embedding,
+account/version-bound durable draft receipts and no blind mutation retries. It
+hands the scheduled release to Substack; the website/X worker remains separate.
+This supersedes the earlier claim that Substack has only a browser path.
+
+Reproduced: six new gateway integration tests, ten queue integration tests and
+eleven distribution tests using actual CLI processes with provider doubles;
+Rust fmt, clippy with warnings denied and 29 Rust tests. See
+`substack-gateway-inputs.sha256` for inputs. No live gateway/account acceptance ran;
+no session credentials were supplied or stored and no article was sent remotely.
+Native controls are included in CI dialog smoke. Source contract and deployment
+instructions are documented in `substack-gateway.md`. Gateway requests are bounded,
+owned by the CLI process and covered by the publication lock through final receipt
+writes. The existing Arch recipe remains pinned to the pre-scheduling snapshot.

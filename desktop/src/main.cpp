@@ -25,7 +25,7 @@ int main(int argc,char **argv){
         QTimer::singleShot(200,&app,[root]{QMetaObject::invokeMethod(root,"smokeConnections");});
         QTimer::singleShot(600,&app,[root,&app]{auto dialog=root->findChild<QObject*>("connectionsDialog");if(!dialog||!dialog->property("visible").toBool()){app.exit(1);return;}QMetaObject::invokeMethod(root,"smokeDistribution");});
         QTimer::singleShot(1000,&app,[root,&app]{auto dialog=root->findChild<QObject*>("distributionDialog");if(!dialog||!dialog->property("visible").toBool()){app.exit(1);return;}QMetaObject::invokeMethod(root,"smokeQueue");});
-        QTimer::singleShot(1400,&app,[root,&app]{auto dialog=root->findChild<QObject*>("queueDialog");auto intake=root->findChild<QObject*>("intakeDialog");app.exit(dialog&&intake&&dialog->property("visible").toBool()&&intake->property("visible").toBool()?0:1);});
+        QTimer::singleShot(1400,&app,[root,&app]{auto dialog=root->findChild<QObject*>("queueDialog");auto intake=root->findChild<QObject*>("intakeDialog");auto gateway=root->findChild<QObject*>("gatewayConfigDialog");app.exit(gateway&&gateway->property("visible").toBool()&&dialog&&intake&&dialog->property("visible").toBool()&&intake->property("visible").toBool()?0:1);});
     }
     const int screenshotIndex=args.indexOf("--screenshot");
     if(screenshotIndex>=0&&screenshotIndex+1<args.size())QTimer::singleShot(2000,&app,[&]{auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(window)window->grabWindow().save(args.at(screenshotIndex+1));app.quit();});
