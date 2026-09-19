@@ -94,6 +94,8 @@ jobs:
           pacman -U --noconfirm "$package"
           runuser -u builder -- env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software pressroom-desktop --dialogs-smoke
           runuser -u builder -- python "$GITHUB_WORKSPACE/tests/installed_companion.py" /usr
+          find /usr/share/pressroom /usr/share/doc/pressroom -type f -print
+          set -x
           test -f /usr/share/pressroom/worker/pressroom-worker.timer
           test -f /usr/share/doc/pressroom/substack-gateway.md
           grep -q '^ExecStart=/usr/bin/pressroom worker ' /usr/share/pressroom/worker/pressroom-worker.service
