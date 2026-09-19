@@ -81,3 +81,19 @@ Native controls are included in CI dialog smoke. Source contract and deployment
 instructions are documented in `substack-gateway.md`. Gateway requests are bounded,
 owned by the CLI process and covered by the publication lock through final receipt
 writes. The existing Arch recipe remains pinned to the pre-scheduling snapshot.
+
+## Merged-feature packaging revision (2026-09-19)
+
+Arch revision 2 pins merged main `5a2a681598d41a45d6b732cfa6be80045b40671c`.
+Downloaded codeload archive SHA256:
+`66ce71f0a13f106d82f6885bbc5b1951d063066c27803eb1170f0199613b91f3`.
+The reviewed recipe now runs queue and gateway integration suites against that
+source, installs optional worker templates and documents, and rewrites the Arch
+worker executable to `/usr/bin/pressroom`. It never enables a timer. Portable bundles
+also include worker templates and installed documentation. CI now stops on makepkg
+failure and emits an Arch package checksum alongside inspection reports.
+
+Local shell syntax, Python compilation and whitespace checks passed. Actual Qt and
+Arch build/install verification is delegated to the packaging PR's CI; see that run
+for its final result. Earlier evidence above remains historical. Live acceptance is
+specified in `docs/live-acceptance.md` and remains unrun without accounts and hosts.
