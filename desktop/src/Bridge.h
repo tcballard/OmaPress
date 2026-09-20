@@ -1,5 +1,6 @@
 #pragma once
 #include <QObject>
+#include <QUrl>
 #include <QVariantMap>
 #include <QQueue>
 #include <QProcess>
@@ -28,6 +29,7 @@ public:
     Q_INVOKABLE QVariantMap workerSettings() const;
     Q_INVOKABLE void saveWorkerSettings(const QString &host, const QString &path);
     Q_INVOKABLE QString newJobId() const;
+    Q_INVOKABLE QUrl bannerUrl(const QString &path) const;
     Q_INVOKABLE QString localPath(const QUrl &url) const;
     Q_INVOKABLE void copyArticle(const QString &html,const QString &text);
     Q_INVOKABLE void copyText(const QString &text);

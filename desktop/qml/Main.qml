@@ -21,6 +21,7 @@ ApplicationWindow {
     property var meta: ({})
     property string articlePath: ""
     property string sourceHash: ""
+    property string mediaArticle: ""
     property bool dirty: false
     property int editRevision: 0
     property int savingRevision: -1
@@ -89,6 +90,13 @@ ApplicationWindow {
     function guarded(action) { if (dirty) { pendingAction = action; unsavedDialog.open() } else action() }
     function openPublication(path) { backend.publicationPath = path; backend.request("inspect", {}, "open") }
     function chooseArticle(path) { guarded(function(){ backend.request("read", {article:path}, "read") }) }
+    function importBanner(url) {
+        if (!hasArticle || backend.busy) return;
+        var path = backend.localPath(url);
+        if (!path) { say("Choose a local image file.", true); return; }
+        mediaArticle = articlePath;
+        backend.request("import-media", {source:path, expected_source_hash:sourceHash}, "media");
+    }
     function changed() { if (loading || !hasArticle) return; dirty = true; editRevision++; renderTimer.restart(); recoveryTimer.restart() }
     function setMeta(key, value) { if (loading) return; var next = Object.assign({},meta); next[key] = value; meta = next; changed() }
     function docArgs() { return {article:articlePath,meta:meta,body:editor.text,expected_source_hash:sourceHash} }
@@ -143,7 +151,7 @@ ApplicationWindow {
             else if(tag==="render") {rendered=v.html;exportData=v.export}
             else if(tag==="validate") {publication=Object.assign({},publication,{diagnostics:v.diagnostics});checksDialog.open()}
             else if(tag==="build") {say("Site and feeds built. Preview the exact site before publishing.");backend.startPreview(false)}
-            else if(tag==="media") {sourceHash=v.source_hash;setMeta("header_image",v.media_path);say("Image imported into this publication.")}
+            else if(tag==="media") {sourceHash=v.source_hash;if(articlePath===mediaArticle){setMeta("header_image",v.media_path);say("Banner added. Save to keep this change.")}else say("Image imported, but the selected article changed. Select it again to attach the banner.")}
             else if(tag==="settings-save") {publication=v;sourceHash=v.source_hash;settingsDialog.close();say("Publication settings saved.")}
             else if(tag==="x-status"||tag==="x-connect"||tag==="x-disconnect") {xConnection=v;say(v.connected?"X account connected.":"X disconnected.")}
             else if(tag==="substack-prepare") {say(v.message);backend.request("distribution-plan",distributionArgs(),"x-action")}
@@ -242,13 +250,42 @@ ApplicationWindow {
                     }
                     Item {Layout.fillWidth:true}
                     Label {visible:win.width>=1100;text:dirty?"Unsaved changes":"Saved locally";font.pixelSize:12;opacity:.55}
-                    WorkspaceButton {text:"Save";enabled:dirty;onClicked:save()}
+                    WorkspaceButton {text:"Save";enabled:dirty&&!backend.busy;onClicked:save()}
                     WorkspaceButton {text:"Details";flat:true;onClicked:metadataDialog.open()}
                     WorkspaceButton {text:"More";flat:true;onClicked:articleMenu.open()
                         Menu {id:articleMenu
                             MenuItem {text:"Check publication";onTriggered:guarded(function(){backend.request("validate",{},"validate")})}
                             MenuItem {text:"Preview website";onTriggered:guarded(function(){backend.startPreview(true)})}
                             MenuItem {text:"Export for X";onTriggered:{renderNow();exportDialog.open()}}
+                        }
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth:true;Layout.leftMargin:40;Layout.rightMargin:40;Layout.bottomMargin:16
+                    Layout.preferredHeight:meta.header_image?Math.min(190,win.height*0.22):70
+                    radius:8;color:bannerDrop.containsDrag?Qt.lighter(win.surface,1.4):win.surface
+                    border.width:1;border.color:bannerDrop.containsDrag?backend.accent:win.border
+                    Image {
+                        id:bannerImage;anchors.fill:parent;anchors.margins:8
+                        source: { var publication = backend.publicationPath; return meta.header_image ? backend.bannerUrl(meta.header_image) : "" }
+                        fillMode:Image.PreserveAspectFit;asynchronous:true
+                        Accessible.name:"Article banner"
+                    }
+                    Label {
+                        anchors.centerIn:parent;visible:!meta.header_image||bannerImage.status===Image.Error||bannerImage.status===Image.Null
+                        text:meta.header_image?"Banner unavailable — replace the image":"Drop banner artwork here"
+                        color:backend.foreground;opacity:.6
+                    }
+                    DropArea {
+                        id:bannerDrop;anchors.fill:parent;enabled:!backend.busy
+                        onEntered:function(drag){drag.accepted=drag.hasUrls&&drag.urls.length===1}
+                        onDropped:function(drop){if(drop.hasUrls&&drop.urls.length===1){importBanner(drop.urls[0]);drop.acceptProposedAction()}}
+                    }
+                    Row {
+                        anchors.right:parent.right;anchors.bottom:parent.bottom;anchors.margins:8;spacing:6
+                        WorkspaceButton {text:meta.header_image?"Replace":"Add banner";enabled:!backend.busy;highlighted:true;onClicked:mediaImport.open()}
+                        WorkspaceButton {text:"Remove";visible:!!meta.header_image;enabled:!backend.busy;onClicked:{setMeta("header_image",null);say("Banner removed from this article. Save to keep this change.")}
+                            background:Rectangle {radius:6;color:backend.background;border.width:1;border.color:win.border}
                         }
                     }
                 }
@@ -299,7 +336,7 @@ ApplicationWindow {
 
     FolderDialog {id:openFolder;title:"Open publication folder";onAccepted:openPublication(backend.localPath(selectedFolder))}
     FolderDialog {id:createParent;title:"Choose where to create the publication";onAccepted:createPath.text=backend.localPath(selectedFolder)+"/fixing-everything"}
-    FileDialog {id:mediaImport;title:"Import header image";nameFilters:["Images (*.png *.jpg *.jpeg *.webp *.gif *.avif)"];onAccepted:backend.request("import-media",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"media")}
+    FileDialog {id:mediaImport;title:"Import header image";nameFilters:["Images (*.png *.jpg *.jpeg *.webp *.gif *.avif)"];onAccepted:importBanner(selectedFile)}
     FileDialog {id:articleImport;title:"Import Markdown article with OmaPress front matter";nameFilters:["Markdown (*.md)"];onAccepted:backend.request("import-article",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"import")}
 
     Dialog {id:createDialog;title:"Create a publication";modal:true;anchors.centerIn:parent;width:540;standardButtons:Dialog.Cancel
