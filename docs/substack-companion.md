@@ -1,6 +1,6 @@
 # Substack browser companion
 
-Pressroom prepares one saved version, including local PNG/JPEG artwork, in a
+OmaPress prepares one saved version, including local PNG/JPEG artwork, in a
 private local outbox. The companion fills the title, subtitle and body of a blank
 Substack draft. It never clicks Publish or chooses an audience. Review the draft,
 wait for image uploads and autosave, then choose your audience and email delivery
@@ -10,24 +10,24 @@ provider verification.
 
 ## Install once
 
-Install the current Pressroom bundle, then register its native host:
+Install the current OmaPress bundle, then register its native host:
 
 ```sh
-python3 ~/.local/share/pressroom/install-companion.py --prefix ~/.local
+python3 ~/.local/share/omapress/install-companion.py --prefix ~/.local
 ```
 
-For the Arch package, use `/usr/share/pressroom/install-companion.py --prefix /usr`.
+For the Arch package, use `/usr/share/omapress/install-companion.py --prefix /usr`.
 Registration writes only your user's Chromium and Google Chrome host manifests;
 it needs no root privileges. Open your browser's extensions manager, enable
 Developer mode, and choose **Load unpacked** with
-`~/.local/share/pressroom/companion` (or `/usr/share/pressroom/companion`). Pin the
-Pressroom companion if desired. Chromium-family browsers using other profile
+`~/.local/share/omapress/companion` (or `/usr/share/omapress/companion`). Pin the
+OmaPress companion if desired. Chromium-family browsers using other profile
 paths require a matching native-host registration. The stable extension ID is
 `lpaeafalgclmnaglhijapdfcmnomkpnc`.
 
 ## Use
 
-1. Save the reviewed article and mark it Ready in Pressroom.
+1. Save the reviewed article and mark it Ready in OmaPress.
 2. Select **Substack draft** alongside Website and/or X in the publish panel, or
    use **Prepare Substack draft** by itself.
 3. Open a blank editor at your publication's `*.substack.com/publish/…` address.
@@ -52,8 +52,8 @@ restricted native host. The host exposes list/read/remove/confirm operations for
 prepared entries, not the engine's general RPC interface. Chunked responses stay
 below Chrome's 1 MiB native-message limit and are integrity checked before use.
 
-The outbox lives in `$XDG_STATE_HOME/pressroom` (default
-`~/.local/state/pressroom`) with private directory/file permissions. Only referenced
+The outbox lives in `$XDG_STATE_HOME/omapress` (default
+`~/.local/state/omapress`) with private directory/file permissions. Only referenced
 images enter exports. Remove entries using the companion when finished. Removing
 a queue entry never removes an article or its publication receipt.
 

@@ -6,13 +6,13 @@ Never put credentials in a report. Do not use real subscribers for a test send.
 
 ## Install
 
-Download `pressroom-arch-unsigned` from the successful packaging PR workflow,
+Download `omapress-arch-unsigned` from the successful packaging PR workflow,
 unzip it, and run `sha256sum -c SHA256SUMS` in the extracted directory. Install the
-non-debug `.pkg.tar.zst` with `sudo pacman -U ./pressroom-*.pkg.tar.zst` on an
+non-debug `.pkg.tar.zst` with `sudo pacman -U ./omapress-*.pkg.tar.zst` on an
 up-to-date Arch/Omarchy machine. This is an unsigned development build; checksums
 check file integrity, not publisher identity. CI artifacts require GitHub access.
 
-Launch Pressroom from the application launcher. Confirm one window, readable theme,
+Launch OmaPress from the application launcher. Confirm one window, readable theme,
 clipboard paste, file dialogs, preview and restart persistence on real Wayland.
 Add an article from ChatGPT, save, reopen, inspect artwork and mark it Ready.
 
@@ -27,7 +27,7 @@ Add an article from ChatGPT, save, reopen, inspect artwork and mark it Ready.
    publication, prepare one draft and inspect it in Substack. Verify text and images.
    Schedule a reviewed test draft with an appropriate audience, confirm its time
    in Substack, cancel it and confirm cancellation there. Separately, deliberately
-   schedule one test publication, close Pressroom and stop the gateway, and verify
+   schedule one test publication, close OmaPress and stop the gateway, and verify
    Substack publishes it at the accepted time. Record the resulting URL.
 4. Browser fallback: register the companion, transfer a draft to a blank Substack
    editor, inspect it, and confirm the final published URL after an explicit send.
@@ -43,7 +43,7 @@ restart the laptop and refresh Queue. Remote receipts remain worker-owned.
 Cancel an additional queued test job and verify it never publishes. Edit source
 before another test job and verify it blocks instead of publishing changed content.
 Stop the timer after testing. Substack schedules must be cancelled separately in
-Substack/API; removing Pressroom does not cancel remote work.
+Substack/API; removing OmaPress does not cancel remote work.
 
 ## Release gate
 

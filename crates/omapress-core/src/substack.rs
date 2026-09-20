@@ -110,7 +110,7 @@ pub fn prepare(root: &std::path::Path, article: &str, expected: &str) -> Result<
         &serde_json::to_vec(&entries)?,
     )?;
     Ok(
-        json!({"status":"awaiting_browser","outbox_id":id,"title":a.meta.title,"message":"Open a blank Substack draft, then use the Pressroom browser companion. Review audience and email settings in Substack before publishing."}),
+        json!({"status":"awaiting_browser","outbox_id":id,"title":a.meta.title,"message":"Open a blank Substack draft, then use the OmaPress browser companion. Review audience and email settings in Substack before publishing."}),
     )
 }
 pub fn message(request: &Value) -> Result<Value> {

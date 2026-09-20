@@ -1,6 +1,6 @@
 # Architecture
 
-`pressroom-core` owns configuration and article parsing, immutable snapshots, diagnostics, media import, deterministic rendering, feeds, X exports, recovery state and GitHub Pages deployment. `pressroom-cli` exposes both ordinary commands and a one-request JSON protocol. No daemon is installed.
+`omapress-core` owns configuration and article parsing, immutable snapshots, diagnostics, media import, deterministic rendering, feeds, X exports, recovery state and GitHub Pages deployment. `omapress-cli` exposes both ordinary commands and a one-request JSON protocol. No daemon is installed.
 
 The desktop is a small C++ executable with embedded QML. `Bridge` starts bounded asynchronous engine subprocesses and carries versioned JSON over stdin/stdout. It queues state-changing operations, coalesces render/recovery requests, exposes Qt file dialogs and MIME clipboard actions, and reads Omarchy `current/theme/colors.toml` with live theme watching. Rules and file mutations stay in Rust. Editor keystrokes stay on the UI thread and do not wait for builds.
 

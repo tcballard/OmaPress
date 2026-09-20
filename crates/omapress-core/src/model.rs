@@ -163,7 +163,7 @@ pub fn slug_ok(s: &str) -> bool {
 pub fn validate_config(p: &Publication) -> Result<()> {
     ensure!(
         p.schema == SCHEMA,
-        "Unsupported publication schema {}; upgrade Pressroom before opening it",
+        "Unsupported publication schema {}; upgrade OmaPress before opening it",
         p.schema
     );
     ensure!(

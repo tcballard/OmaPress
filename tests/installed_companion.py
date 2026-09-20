@@ -5,7 +5,7 @@ from pathlib import Path
 prefix=Path(sys.argv[1]).resolve()
 with tempfile.TemporaryDirectory() as temp:
     env=dict(os.environ,XDG_CONFIG_HOME=str(Path(temp)/'config'),XDG_STATE_HOME=str(Path(temp)/'state'))
-    script=prefix/'share/pressroom/install-companion.py'
+    script=prefix/'share/omapress/install-companion.py'
     subprocess.run([sys.executable,str(script),'--prefix',str(prefix)],env=env,check=True)
     for browser in ['chromium','google-chrome']:
         host=Path(env['XDG_CONFIG_HOME'])/browser/'NativeMessagingHosts/com.pressroom.companion.json'

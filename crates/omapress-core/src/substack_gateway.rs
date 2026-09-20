@@ -63,7 +63,9 @@ fn validate(c: &Config) -> Result<()> {
 }
 fn credential_file() -> Result<Option<PathBuf>> {
     use std::os::unix::fs::MetadataExt;
-    let Some(path) = std::env::var_os("PRESSROOM_SUBSTACK_GATEWAY_CREDENTIALS_FILE") else {
+    let Some(path) = std::env::var_os("OMAPRESS_SUBSTACK_GATEWAY_CREDENTIALS_FILE")
+        .or_else(|| std::env::var_os("PRESSROOM_SUBSTACK_GATEWAY_CREDENTIALS_FILE"))
+    else {
         return Ok(None);
     };
     let p = PathBuf::from(path);
@@ -109,7 +111,7 @@ pub fn connect(value: Value) -> Result<Value> {
             "secret-tool",
             &[
                 "store",
-                "--label=Pressroom Substack Gateway",
+                "--label=OmaPress Substack Gateway",
                 "application",
                 "pressroom",
                 "service",

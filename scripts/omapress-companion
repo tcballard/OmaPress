@@ -1,4 +1,4 @@
 #!/bin/sh
 set -eu
 base=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-exec "$base/pressroom" native-message "$@"
+exec "$base/omapress" native-message "$@"

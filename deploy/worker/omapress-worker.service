@@ -1,12 +1,12 @@
 [Unit]
-Description=Pressroom publishing queue
+Description=OmaPress publishing queue
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 Type=oneshot
-EnvironmentFile=%h/.config/pressroom/worker.env
-ExecStart=/usr/local/bin/pressroom worker ${PRESSROOM_PUBLICATION}
+EnvironmentFile=%h/.config/omapress/worker.env
+ExecStart=/usr/local/bin/omapress worker ${OMAPRESS_PUBLICATION}
 TimeoutStartSec=10min
 KillMode=control-group
 UMask=0077

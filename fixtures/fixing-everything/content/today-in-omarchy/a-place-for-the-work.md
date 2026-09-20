@@ -15,7 +15,7 @@
   ]
 }
 ---
-This is a **sample edition** for testing Pressroom. It is not a published article.
+This is a **sample edition** for testing OmaPress. It is not a published article.
 
 ## Keep the source close
 
@@ -25,4 +25,4 @@ Writing begins with an ordinary file. The website, archives and feeds are genera
 - Review your changes before publishing.
 - Keep a permanent address for every story.
 
-Read the [Pressroom repository](https://github.com/tcballard/OmaPress) for the product specification.
+Read the [OmaPress repository](https://github.com/tcballard/OmaPress) for the product specification.

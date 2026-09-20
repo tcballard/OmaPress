@@ -1,6 +1,6 @@
 # Article distribution — development status
 
-Pressroom keeps one local article and tracks website, X Articles and Substack independently.
+OmaPress keeps one local article and tracks website, X Articles and Substack independently.
 
 | Destination | Implemented | Remaining live acceptance |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ receipts never change source hashes or enter generated websites.
 
 ## Engine protocol
 
-Use `pressroom rpc` with schema 1, publication `path` and `args`:
+Use `omapress rpc` with schema 1, publication `path` and `args`:
 
 - `distribution-plan`: `article`, `expected_source_hash`.
 - `distribution-review`: same plus `website`, `x`, `substack` booleans.

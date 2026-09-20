@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
-ENGINE=ROOT/'target/debug/pressroom'
+ENGINE=ROOT/'target/debug/omapress'
 
 class DistributionTests(unittest.TestCase):
     def setUp(self):
@@ -18,13 +18,13 @@ class DistributionTests(unittest.TestCase):
         self.pub=self.root/'publication'
         self.bin=self.root/'bin';self.bin.mkdir()
         self.calls=self.root/'calls'
-        self.env=dict(os.environ,PATH=str(self.bin)+os.pathsep+os.environ['PATH'],PRESSROOM_TEST_CALLS=str(self.calls),XDG_STATE_HOME=str(self.root/'state'))
+        self.env=dict(os.environ,PATH=str(self.bin)+os.pathsep+os.environ['PATH'],OMAPRESS_TEST_CALLS=str(self.calls),XDG_STATE_HOME=str(self.root/'state'))
         self.tool('secret-tool',"print('test-user-token')")
         self.tool('curl',"""import os,sys,json
 from pathlib import Path
-p=Path(os.environ['PRESSROOM_TEST_CALLS'])
+p=Path(os.environ['OMAPRESS_TEST_CALLS'])
 with p.open('a') as f:f.write(sys.argv[-1]+'\\n')
-if os.environ.get('PRESSROOM_TEST_FAILURE'):sys.exit(28)
+if os.environ.get('OMAPRESS_TEST_FAILURE'):sys.exit(28)
 if '/draft' in sys.argv[-1]:
     payload=json.loads(Path(sys.argv[sys.argv.index('--data-binary')+1][1:]).read_text())
     Path(str(p)+'.payload').write_text(json.dumps(payload))
@@ -91,10 +91,10 @@ Another paragraph.
         self.native('confirm',expect=False,id=id,url='http://author.substack.com/p/story')
     def test_oauth_loopback_flow_refresh_and_disconnect(self):
         secret=self.root/'keyring'
-        self.env['PRESSROOM_TEST_SECRET']=str(secret)
+        self.env['OMAPRESS_TEST_SECRET']=str(secret)
         self.tool('secret-tool',"""import os,sys
 from pathlib import Path
-p=Path(os.environ['PRESSROOM_TEST_SECRET'])
+p=Path(os.environ['OMAPRESS_TEST_SECRET'])
 if sys.argv[1]=='store':p.write_text(sys.stdin.read())
 elif sys.argv[1]=='clear':p.unlink()
 else:print(p.read_text())
@@ -154,16 +154,16 @@ else:print(json.dumps({'data':{'id':'123'}}))
         self.rpc('x-publish',**self.args)
         self.assertEqual(self.routes(),['https://api.x.com/2/articles/draft','https://api.x.com/2/articles/123/publish'])
     def test_timeout_survives_restart_and_blocks_retry(self):
-        self.env['PRESSROOM_TEST_FAILURE']='1'
+        self.env['OMAPRESS_TEST_FAILURE']='1'
         self.rpc('x-publish',expect=False,**self.args)
-        del self.env['PRESSROOM_TEST_FAILURE']
+        del self.env['OMAPRESS_TEST_FAILURE']
         error=self.rpc('x-publish',expect=False,**self.args)
         self.assertIn('unknown outcome',error)
         self.assertEqual(len(self.routes()),1)
         self.assertEqual(self.rpc('distribution-plan',**self.args)['targets'][1]['status'],'unknown')
     def test_failed_publish_retains_remote_draft_id(self):
         self.rpc('x-draft',**self.args)
-        self.env['PRESSROOM_TEST_FAILURE']='1'
+        self.env['OMAPRESS_TEST_FAILURE']='1'
         self.rpc('x-publish',expect=False,**self.args)
         p=self.rpc('distribution-plan',**self.args)
         self.assertEqual(p['targets'][1]['receipt']['remote_id'],'123')

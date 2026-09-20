@@ -1,6 +1,6 @@
 # CLI protocol schema 1
 
-The desktop sends one JSON request to `pressroom rpc` on stdin and closes stdin. The command writes exactly one JSON response on stdout and exits. Diagnostics never share stdout outside this envelope. Requests are limited to 6 MiB and unknown schema/command/fields are rejected.
+The desktop sends one JSON request to `omapress rpc` on stdin and closes stdin. The command writes exactly one JSON response on stdout and exits. Diagnostics never share stdout outside this envelope. Requests are limited to 6 MiB and unknown schema/command/fields are rejected.
 
 ```json
 {"schema":1,"command":"inspect","path":"/home/user/Publications/example","args":{}}

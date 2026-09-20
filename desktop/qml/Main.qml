@@ -8,7 +8,7 @@ ApplicationWindow {
     id: win
     width: 1440; height: 930; minimumWidth: 900; minimumHeight: 620
     visible: true
-    title: (dirty ? "• " : "") + (meta.title || "Pressroom") + (publication.config ? " — " + publication.config.name : "")
+    title: (dirty ? "• " : "") + (meta.title || "OmaPress") + (publication.config ? " — " + publication.config.name : "")
     color: backend.background
     Material.theme: Qt.darker(backend.background, 1).r + Qt.darker(backend.background, 1).g + Qt.darker(backend.background, 1).b > 1.5 ? Material.Light : Material.Dark
     Material.accent: backend.accent
@@ -138,7 +138,7 @@ ApplicationWindow {
         padding: 8
         RowLayout {
             anchors.fill: parent; spacing: 12
-            Label { text:"Pressroom";font.pixelSize:20;font.bold:true;Layout.leftMargin:8 }
+            Label { text:"OmaPress";font.pixelSize:20;font.bold:true;Layout.leftMargin:8 }
             Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.65 }
             BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
             Button { text:"Queue…";enabled:opened&&!backend.busy;onClicked:showQueue() }
@@ -174,7 +174,7 @@ ApplicationWindow {
                     Label { text:opened&&publication.state&&publication.state.pending?"Deployment needs recheck":opened&&publication.state&&publication.state.deployments.length?"Last deployment verified":"Local publication";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.65;font.pixelSize:12 }
                     Button { text:"Deployment history";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:historyDialog.open() }
                     Button { text:"Settings";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:guarded(function(){configEditor.text=publication.config_text;settingsDialog.open()}) }
-                    Label { text:"Pressroom 0.1.0-rc.1";font.pixelSize:11;opacity:.4 }
+                    Label { text:"OmaPress 0.1.0-rc.1";font.pixelSize:11;opacity:.4 }
                 }
             }
             Rectangle { Layout.fillHeight:true;implicitWidth:1;color:backend.foreground;opacity:.13 }
@@ -255,7 +255,7 @@ ApplicationWindow {
     FolderDialog {id:openFolder;title:"Open publication folder";onAccepted:openPublication(backend.localPath(selectedFolder))}
     FolderDialog {id:createParent;title:"Choose where to create the publication";onAccepted:createPath.text=backend.localPath(selectedFolder)+"/fixing-everything"}
     FileDialog {id:mediaImport;title:"Import header image";nameFilters:["Images (*.png *.jpg *.jpeg *.webp *.gif *.avif)"];onAccepted:backend.request("import-media",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"media")}
-    FileDialog {id:articleImport;title:"Import Markdown article with Pressroom front matter";nameFilters:["Markdown (*.md)"];onAccepted:backend.request("import-article",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"import")}
+    FileDialog {id:articleImport;title:"Import Markdown article with OmaPress front matter";nameFilters:["Markdown (*.md)"];onAccepted:backend.request("import-article",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"import")}
 
     Dialog {id:createDialog;title:"Create a publication";modal:true;anchors.centerIn:parent;width:540;standardButtons:Dialog.Cancel
         ColumnLayout {width:parent.width;spacing:12
@@ -393,7 +393,7 @@ ApplicationWindow {
                 }
                 Label {text:"An acknowledged schedule is not proof of publication. If an operation times out, inspect Substack before proceeding. Cover artwork is placed at the top of the article body; check the separate social preview in Substack.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
                 Label {text:"Substack · browser companion";font.bold:true}
-                Label {text:"Prepare the saved article and artwork, then use the Pressroom companion to fill a blank Substack draft. Review the audience and email delivery in Substack before publishing.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
+                Label {text:"Prepare the saved article and artwork, then use the OmaPress companion to fill a blank Substack draft. Review the audience and email delivery in Substack before publishing.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}
                 Button {text:"Prepare Substack draft";enabled:distribution.ready&&!backend.busy;onClicked:backend.request("substack-prepare",distributionArgs())}
                 RowLayout {
                     Button {text:"Copy title";onClicked:backend.copyText(distribution.substack.title)}
@@ -490,8 +490,8 @@ ApplicationWindow {
         ScrollView {anchors.fill:parent;clip:true;ColumnLayout {width:queueDialog.availableWidth-24;spacing:12
             CheckBox {id:remoteEnabled;text:"Use an always-on SSH worker";onToggled:{queueState={jobs:[]};remoteSource="";queueId=""}}
             Label {text:remoteEnabled.checked?"Accepted jobs run on your worker while this laptop is off. The worker needs its own credentials and timer.":"Local jobs require this computer to be awake and the worker timer to be installed. The app alone does not run the queue.";wrapMode:Text.Wrap;Layout.fillWidth:true}
-            TextField {id:workerHost;visible:remoteEnabled.checked;placeholderText:"SSH host alias, e.g. pressroom-worker";Layout.fillWidth:true;onTextChanged:{remoteSource="";queueState={jobs:[]}} Accessible.name:"Worker SSH alias"}
-            TextField {id:workerPath;visible:remoteEnabled.checked;placeholderText:"Absolute worker publication path, e.g. /srv/pressroom/publication";Layout.fillWidth:true;onTextChanged:{remoteSource="";queueState={jobs:[]}} Accessible.name:"Worker publication path"}
+            TextField {id:workerHost;visible:remoteEnabled.checked;placeholderText:"SSH host alias, e.g. omapress-worker";Layout.fillWidth:true;onTextChanged:{remoteSource="";queueState={jobs:[]}} Accessible.name:"Worker SSH alias"}
+            TextField {id:workerPath;visible:remoteEnabled.checked;placeholderText:"Absolute worker publication path, e.g. /srv/omapress/publication";Layout.fillWidth:true;onTextChanged:{remoteSource="";queueState={jobs:[]}} Accessible.name:"Worker publication path"}
             RowLayout {
                 Button {text:"Refresh queue";enabled:!backend.busy;onClicked:queueRequest("queue-list",{},"queue-list")}
                 Button {text:"Upload reviewed publication";visible:remoteEnabled.checked;enabled:!backend.busy&&!dirty;onClicked:queueRequest("queue-upload",{expected_source_hash:sourceHash,expected_remote_source_hash:remoteSource},"queue-uploaded")}

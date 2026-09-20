@@ -97,3 +97,12 @@ Local shell syntax, Python compilation and whitespace checks passed. Actual Qt a
 Arch build/install verification is delegated to the packaging PR's CI; see that run
 for its final result. Earlier evidence above remains historical. Live acceptance is
 specified in `docs/live-acceptance.md` and remains unrun without accounts and hosts.
+
+## Final OmaPress naming (2026-09-20)
+
+Tom selected OmaPress as the final name. Executables, desktop identity, Rust crates,
+worker templates, portable artifacts, Arch package and current documentation now
+use OmaPress/omapress. See `renaming.md` for compatibility and worker upgrade steps.
+Earlier entries and checksum files remain historical, including their original paths.
+The packaging PR validates the renamed source through engine/native/Arch CI.
+Live XPS and provider acceptance remain pending; no OPR submission is made here.

@@ -1,4 +1,4 @@
-use pressroom_core::{
+use omapress_core::{
     model::*,
     preview,
     protocol::{self, Request},
@@ -293,7 +293,7 @@ fn ready_validation_rejects_missing_title_and_bad_source() {
     assert!(d.iter().any(|d| d.message.contains("Invalid source link")));
 }
 #[test]
-fn concurrent_pressroom_writes_are_locked() {
+fn concurrent_omapress_writes_are_locked() {
     let (_t, s) = fixture();
     let _lock = lock(&s.root).unwrap();
     assert!(lock(&s.root).is_err());
@@ -417,7 +417,7 @@ fn distribution_receipts_survive_reopen_and_detect_corrections() {
     let (_t, s) = fixture();
     let s = ready(&s);
     let path = "content/today-in-omarchy/story.md";
-    let v = pressroom_core::distribution::confirm(
+    let v = omapress_core::distribution::confirm(
         &s.root,
         path,
         &s.hash,
@@ -427,7 +427,7 @@ fn distribution_receipts_survive_reopen_and_detect_corrections() {
     .unwrap();
     assert_eq!(v["targets"][2]["status"], "confirmed_by_user");
     assert_eq!(snapshot(&s.root).unwrap().hash, s.hash);
-    let reopened = pressroom_core::distribution::plan(&s.root, path, &s.hash).unwrap();
+    let reopened = omapress_core::distribution::plan(&s.root, path, &s.hash).unwrap();
     assert_eq!(
         reopened["targets"][2]["receipt"]["url"],
         "https://example.substack.com/p/story"
@@ -440,11 +440,11 @@ fn distribution_receipts_survive_reopen_and_detect_corrections() {
     )
     .unwrap();
     assert_eq!(
-        pressroom_core::distribution::plan(&s.root, path, &changed.hash).unwrap()["targets"][2]["status"],
+        omapress_core::distribution::plan(&s.root, path, &changed.hash).unwrap()["targets"][2]["status"],
         "changed"
     );
     assert!(
-        pressroom_core::distribution::confirm(
+        omapress_core::distribution::confirm(
             &s.root,
             path,
             &s.hash,
@@ -467,12 +467,10 @@ fn distribution_rejects_corrupt_history_and_unsafe_urls() {
         ("substack", "https://user:secret@example.com/p/story"),
         ("website", "https://example.com/p/story"),
     ] {
-        assert!(
-            pressroom_core::distribution::confirm(&s.root, path, &s.hash, target, url).is_err()
-        );
+        assert!(omapress_core::distribution::confirm(&s.root, path, &s.hash, target, url).is_err());
     }
     atomic_write(&s.root.join(".omapress/distribution.json"), b"{broken").unwrap();
-    assert!(pressroom_core::distribution::plan(&s.root, path, &s.hash).is_err());
+    assert!(omapress_core::distribution::plan(&s.root, path, &s.hash).is_err());
     assert_eq!(
         fs::read(s.root.join(".omapress/distribution.json")).unwrap(),
         b"{broken"
@@ -485,14 +483,14 @@ fn x_api_preserves_unicode_paragraphs_and_refuses_silent_format_loss() {
         article(ID, "story", Status::Ready, "Hello 🌍.\n\nSecond paragraph.").as_bytes(),
     )
     .unwrap();
-    let p = pressroom_core::x_article::payload(&a).unwrap();
+    let p = omapress_core::x_article::payload(&a).unwrap();
     assert_eq!(p["content_state"]["blocks"][0]["text"], "Hello 🌍.");
     assert_eq!(p["content_state"]["blocks"].as_array().unwrap().len(), 2);
     a.body = "<script>bad()</script>".into();
-    assert!(pressroom_core::x_article::payload(&a).is_err());
+    assert!(omapress_core::x_article::payload(&a).is_err());
     a.body = "Plain body.".into();
     a.meta.header_image = Some("https://remote.example/header.png".into());
-    assert!(pressroom_core::x_article::payload(&a).is_err());
+    assert!(omapress_core::x_article::payload(&a).is_err());
 }
 #[test]
 fn pending_x_outcome_blocks_duplicate_without_credentials() {
@@ -515,7 +513,7 @@ fn pending_x_outcome_blocks_duplicate_without_credentials() {
         &serde_json::to_vec(&ledger).unwrap(),
     )
     .unwrap();
-    let err = pressroom_core::distribution::x_action(&s.root, &a.path, &s.hash, true)
+    let err = omapress_core::distribution::x_action(&s.root, &a.path, &s.hash, true)
         .unwrap_err()
         .to_string();
     assert!(err.contains("unknown outcome"), "{err}");
@@ -531,7 +529,7 @@ fn pending_x_outcome_blocks_duplicate_without_credentials() {
 #[test]
 fn x_rich_text_preserves_utf16_ranges_links_and_blocks() {
     let a = parse_article("content/a.md", article(ID,"story",Status::Ready,"# Heading\n\n🌍 **bold _both_** [link](https://example.com).\n\n- First\n- Second\n\n> Quote\n\n```rust\nlet x = 1;\n```\n").as_bytes()).unwrap();
-    let p = pressroom_core::x_article::payload(&a).unwrap();
+    let p = omapress_core::x_article::payload(&a).unwrap();
     let blocks = p["content_state"]["blocks"].as_array().unwrap();
     assert_eq!(blocks[0]["type"], "header-one");
     assert_eq!(

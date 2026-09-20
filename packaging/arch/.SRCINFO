@@ -1,7 +1,7 @@
-pkgbase = pressroom
+pkgbase = omapress
 	pkgdesc = Native local-first publishing for Omarchy
 	pkgver = 0.1.0rc1.r20260919
-	pkgrel = 2
+	pkgrel = 3
 	url = https://github.com/tcballard/OmaPress
 	arch = x86_64
 	license = MIT
@@ -24,10 +24,10 @@ pkgbase = pressroom
 	depends = xdg-utils
 	optdepends = python: register the optional Substack browser companion
 	optdepends = chromium: optional Substack browser companion
-	conflicts = omapress
-	replaces = omapress
+	conflicts = pressroom
+	replaces = pressroom
 	options = !debug
-	source = pressroom-5a2a681598d41a45d6b732cfa6be80045b40671c.tar.gz::https://codeload.github.com/tcballard/OmaPress/tar.gz/5a2a681598d41a45d6b732cfa6be80045b40671c
+	source = omapress-5a2a681598d41a45d6b732cfa6be80045b40671c.tar.gz::https://codeload.github.com/tcballard/OmaPress/tar.gz/5a2a681598d41a45d6b732cfa6be80045b40671c
 	sha256sums = 66ce71f0a13f106d82f6885bbc5b1951d063066c27803eb1170f0199613b91f3
 
-pkgname = pressroom
+pkgname = omapress

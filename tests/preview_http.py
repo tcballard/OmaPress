@@ -2,7 +2,7 @@
 """Actual loopback preview acceptance, run on native Linux CI."""
 import json,os,pathlib,subprocess,urllib.request,tempfile,shutil
 root=pathlib.Path(__file__).resolve().parents[1]
-cli=os.environ.get('PRESSROOM_CLI',str(root/'target/debug/pressroom'))
+cli=os.environ.get('OMAPRESS_CLI',str(root/'target/debug/omapress'))
 with tempfile.TemporaryDirectory()as t:
     pub=pathlib.Path(t)/'pub';shutil.copytree(root/'fixtures/fixing-everything',pub,ignore=shutil.ignore_patterns('.omapress','output'))
     p=subprocess.Popen([cli,'preview',str(pub),'--json'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)

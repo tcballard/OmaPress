@@ -43,25 +43,25 @@ jobs:
       - run: cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release && cmake --build build/desktop --parallel 2
       - name: Native application and clipboard smoke
         env:
-          PRESSROOM_CLI: ${{ github.workspace }}/target/release/pressroom
+          OMAPRESS_CLI: ${{ github.workspace }}/target/release/omapress
           QT_QUICK_BACKEND: software
         run: |
-          xvfb-run -a build/desktop/pressroom-desktop --publication "$PWD/fixtures/fixing-everything" --smoke
-          xvfb-run -a build/desktop/pressroom-desktop --clipboard-smoke
-          xvfb-run -a build/desktop/pressroom-desktop --dialogs-smoke
+          xvfb-run -a build/desktop/omapress-desktop --publication "$PWD/fixtures/fixing-everything" --smoke
+          xvfb-run -a build/desktop/omapress-desktop --clipboard-smoke
+          xvfb-run -a build/desktop/omapress-desktop --dialogs-smoke
       - run: python3 scripts/package.py
       - name: Install bundle and verify both binaries
         run: |
-          bundle=$(find dist -mindepth 1 -maxdepth 1 -type d -name 'pressroom-*' -print -quit)
-          sh "$bundle/install.sh" "$RUNNER_TEMP/pressroom-installed"
-          "$RUNNER_TEMP/pressroom-installed/bin/pressroom" --version
-          test -f "$RUNNER_TEMP/pressroom-installed/share/pressroom/worker/pressroom-worker.service"
-          test -f "$RUNNER_TEMP/pressroom-installed/share/doc/pressroom/substack-gateway.md"
-          python3 tests/installed_companion.py "$RUNNER_TEMP/pressroom-installed"
-          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software "$RUNNER_TEMP/pressroom-installed/bin/pressroom-desktop" --smoke
+          bundle=$(find dist -mindepth 1 -maxdepth 1 -type d -name 'omapress-*' -print -quit)
+          sh "$bundle/install.sh" "$RUNNER_TEMP/omapress-installed"
+          "$RUNNER_TEMP/omapress-installed/bin/omapress" --version
+          test -f "$RUNNER_TEMP/omapress-installed/share/omapress/worker/omapress-worker.service"
+          test -f "$RUNNER_TEMP/omapress-installed/share/doc/omapress/substack-gateway.md"
+          python3 tests/installed_companion.py "$RUNNER_TEMP/omapress-installed"
+          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software "$RUNNER_TEMP/omapress-installed/bin/omapress-desktop" --smoke
       - uses: actions/upload-artifact@v4
         with:
-          name: pressroom-linux-x86_64
+          name: omapress-linux-x86_64
           path: |
             dist/*.tar.gz
             dist/SHA256SUMS
@@ -85,7 +85,7 @@ jobs:
         run: |
           cd packaging/arch
           namcap PKGBUILD
-          package=$(find . -maxdepth 1 -name 'pressroom-*.pkg.tar.zst' ! -name '*debug*' -print -quit)
+          package=$(find . -maxdepth 1 -name 'omapress-*.pkg.tar.zst' ! -name '*debug*' -print -quit)
           test -n "$package"
           namcap "$package" | tee namcap-report.txt
           python -c 'from pathlib import Path; assert not any(" E: " in line for line in Path("namcap-report.txt").read_text().splitlines()), "namcap reported packaging errors"'
@@ -95,19 +95,19 @@ jobs:
           # Retain it here to validate the complete package payload.
           sed -i '/^NoExtract/d' /etc/pacman.conf
           pacman -U --noconfirm "$package"
-          runuser -u builder -- env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software pressroom-desktop --dialogs-smoke
+          runuser -u builder -- env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software omapress-desktop --dialogs-smoke
           runuser -u builder -- python "$GITHUB_WORKSPACE/tests/installed_companion.py" /usr
-          test -f /usr/share/pressroom/worker/pressroom-worker.timer
-          test -f /usr/share/doc/pressroom/substack-gateway.md
-          grep -q '^ExecStart=/usr/bin/pressroom worker ' /usr/share/pressroom/worker/pressroom-worker.service
+          test -f /usr/share/omapress/worker/omapress-worker.timer
+          test -f /usr/share/doc/omapress/substack-gateway.md
+          grep -q '^ExecStart=/usr/bin/omapress worker ' /usr/share/omapress/worker/omapress-worker.service
           pacman -U --noconfirm "$package"
-          pacman -R --noconfirm pressroom
-          test ! -e /usr/bin/pressroom
-          test ! -e /usr/bin/pressroom-desktop
-          test ! -e /usr/bin/pressroom-companion
+          pacman -R --noconfirm omapress
+          test ! -e /usr/bin/omapress
+          test ! -e /usr/bin/omapress-desktop
+          test ! -e /usr/bin/omapress-companion
       - uses: actions/upload-artifact@v4
         with:
-          name: pressroom-arch-unsigned
+          name: omapress-arch-unsigned
           path: |
             packaging/arch/*.pkg.tar.zst
             packaging/arch/SHA256SUMS

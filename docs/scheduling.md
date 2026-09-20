@@ -25,7 +25,7 @@ nonexistent times at the clock change are rejected. The RPC also accepts an RFC3
 - Jobs more than one hour late stop as blocked. Successful and uncertain attempts
   are never automatically retried. Each destination's outcome is retained.
 - An interrupted running job becomes `needs_review`. Inspect its receipts and
-  the destination; website recovery uses `pressroom recheck`, while X supports
+  the destination; website recovery uses `omapress recheck`, while X supports
   recording a published URL. Then use **Reconcile recorded results** to close the job against those receipts without resending. Failed, unconfirmed destinations remain stopped for operator review; this initial UI has no blind Retry.
 - Jobs are processed sequentially, one per worker invocation. A timer checks roughly
   once per minute after the preceding invocation finishes; this is not second-exact delivery.
@@ -39,11 +39,11 @@ No inbound application HTTP listener is installed; SSH uses existing host-key tr
 and noninteractive authentication. Do not disable StrictHostKeyChecking.
 
 1. Build the matching CLI (`cargo build --release --locked`) on the worker and
-   install `target/release/pressroom` as `/usr/local/bin/pressroom`.
-2. Create a private parent directory, e.g. `/srv/pressroom`, writable only by the
+   install `target/release/omapress` as `/usr/local/bin/omapress`.
+2. Create a private parent directory, e.g. `/srv/omapress`, writable only by the
    worker user. The publication child is created by the app's first upload.
-3. Configure and verify an SSH alias locally, e.g. `pressroom-worker`. Ensure
-   `ssh pressroom-worker pressroom --version` succeeds without an interactive prompt.
+3. Configure and verify an SSH alias locally, e.g. `omapress-worker`. Ensure
+   `ssh omapress-worker omapress --version` succeeds without an interactive prompt.
 4. In Queue, enable the SSH worker, enter that alias and the absolute publication
    path, then **Upload reviewed publication**. Initial transfer carries source and
    destination history, never credentials. The encoded transfer budget is 6 MiB;
@@ -65,7 +65,7 @@ credentials are configured separately; check that they belong to the intended ac
 Website publishing needs `git`, `gh` and the worker user's GitHub authorization,
 with the publication's configured repository accessible. Run `gh auth login` as
 that user. X needs `curl` and either Secret Service or an explicitly configured
-`PRESSROOM_X_CREDENTIALS_FILE` containing the OAuth credential JSON:
+`OMAPRESS_X_CREDENTIALS_FILE` containing the OAuth credential JSON:
 
 ```json
 {"access_token":"…","refresh_token":"…","client_id":"…","user_id":"…","username":"…","expires_at":0}
@@ -80,27 +80,27 @@ default. This release does not automate remote OAuth enrollment.
 
 ## Install the optional user timer
 
-Packages include templates in `<prefix>/share/pressroom/worker` and documentation
-in `<prefix>/share/doc/pressroom` (`/usr` for Arch, normally `~/.local` for the bundle).
+Packages include templates in `<prefix>/share/omapress/worker` and documentation
+in `<prefix>/share/doc/omapress` (`/usr` for Arch, normally `~/.local` for the bundle).
 Copy those templates instead of `deploy/worker/*` when using an installed package.
-The Arch template uses `/usr/bin/pressroom`; the bundle/source template uses
-`/usr/local/bin/pressroom`. Before enabling the timer, set `ExecStart` in your copied
+The Arch template uses `/usr/bin/omapress`; the bundle/source template uses
+`/usr/local/bin/omapress`. Before enabling the timer, set `ExecStart` in your copied
 service to the absolute installed CLI path if different. Templates are never enabled
 automatically.
 
 Run as the worker user, from the matching source checkout:
 
 ```sh
-mkdir -p ~/.config/systemd/user ~/.config/pressroom
-cp deploy/worker/pressroom-worker.service deploy/worker/pressroom-worker.timer ~/.config/systemd/user/
-cp deploy/worker/worker.env.example ~/.config/pressroom/worker.env
-chmod 600 ~/.config/pressroom/worker.env
+mkdir -p ~/.config/systemd/user ~/.config/omapress
+cp deploy/worker/omapress-worker.service deploy/worker/omapress-worker.timer ~/.config/systemd/user/
+cp deploy/worker/worker.env.example ~/.config/omapress/worker.env
+chmod 600 ~/.config/omapress/worker.env
 # Edit worker.env to use your actual absolute publication and credential paths.
-$EDITOR ~/.config/pressroom/worker.env
+$EDITOR ~/.config/omapress/worker.env
 systemctl --user daemon-reload
-systemctl --user enable --now pressroom-worker.timer
-systemctl --user status pressroom-worker.timer
-journalctl --user -u pressroom-worker.service
+systemctl --user enable --now omapress-worker.timer
+systemctl --user status omapress-worker.timer
+journalctl --user -u omapress-worker.service
 ```
 
 To keep a user service active after logout, a host administrator can enable linger
@@ -108,8 +108,8 @@ for the dedicated worker user (`loginctl enable-linger USER`). Nothing enables i
 automatically. Start with a nonproduction publication and verify the credentials
 and receipts before relying on unattended delivery.
 
-Stop scheduling with `systemctl --user disable --now pressroom-worker.timer`.
-Stop an in-flight worker with `systemctl --user stop pressroom-worker.service`;
+Stop scheduling with `systemctl --user disable --now omapress-worker.timer`.
+Stop an in-flight worker with `systemctl --user stop omapress-worker.service`;
 its job will require review on restart. Remove the two unit files and reload the
 user daemon to uninstall. Preserve the publication's `.omapress` history and all
 articles. Uninstalling the desktop does not cancel jobs already accepted remotely;
