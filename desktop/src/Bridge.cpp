@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
+#include <QFileInfo>
 #include <QDir>
 #include <QColor>
 #include <QStandardPaths>
@@ -24,6 +25,15 @@ Bridge::Bridge(QObject *parent):QObject(parent) {
 }
 Bridge::~Bridge(){if(m_active){m_active->kill();m_active->waitForFinished(1000);}stopPreview();}
 void Bridge::setPublicationPath(const QString &path){if(path==m_path)return;stopPreview();++m_generation;m_queue.clear();m_path=path;emit publicationPathChanged();emit busyChanged();}
+QUrl Bridge::bannerUrl(const QString &path) const {
+    const QUrl url(path);
+    if (url.isValid() && url.scheme() == "https") return url;
+    if (!path.startsWith("/media/")) return {};
+    const QString root = QFileInfo(QDir(m_path).filePath("media")).canonicalFilePath();
+    const QString file = QFileInfo(QDir(m_path).filePath(path.mid(1))).canonicalFilePath();
+    if (root.isEmpty() || file.isEmpty() || !file.startsWith(root + "/") || !QFileInfo(file).isFile()) return {};
+    return QUrl::fromLocalFile(file);
+}
 QString Bridge::localPath(const QUrl &url)const{return url.toLocalFile();}
 QString Bridge::lastPublication()const{const auto args=QCoreApplication::arguments();const int index=args.indexOf("--publication");if(index>=0&&index+1<args.size())return args.at(index+1);auto last=QSettings().value("lastPublication").toString();if(last.isEmpty())last=QSettings("OmaPress","OmaPress").value("lastPublication").toString();return last;}
 QString Bridge::cliPath()const{auto override=qEnvironmentVariable("OMAPRESS_CLI");if(override.isEmpty())override=qEnvironmentVariable("PRESSROOM_CLI");if(!override.isEmpty())return override;const QString sibling=QCoreApplication::applicationDirPath()+"/omapress";if(QFile::exists(sibling))return sibling;return QStandardPaths::findExecutable("omapress");}

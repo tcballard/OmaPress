@@ -21,12 +21,13 @@ ApplicationWindow {
     property var meta: ({})
     property string articlePath: ""
     property string sourceHash: ""
+    property string mediaArticle: ""
     property bool dirty: false
     property int editRevision: 0
     property int savingRevision: -1
     property bool loading: false
     property bool closingAllowed: false
-    property bool showPreview: true
+    property bool showPreview: false
     property string filter: "all"
     property string query: ""
     property string notice: ""
@@ -51,6 +52,30 @@ ApplicationWindow {
         else backend.request(command,args,tag)
     }
     function showQueue() { var settings=backend.workerSettings();workerHost.text=settings.host||"";workerPath.text=settings.path||"";queueDialog.open(); queueRequest("queue-list",{},"queue-list") }
+    readonly property color surface: Qt.lighter(backend.background, 1.22)
+    readonly property color border: Qt.rgba(backend.foreground.r, backend.foreground.g, backend.foreground.b, 0.10)
+
+    component WorkspaceButton: Button {
+        id: control
+        font.capitalization: Font.MixedCase
+        implicitHeight: 36
+        topInset: 0; bottomInset: 0
+        leftPadding: 14; rightPadding: 14
+        background: Rectangle {
+            radius: 6
+            color: control.highlighted ? backend.accent : control.down ? Qt.lighter(win.surface, 1.4) : control.hovered ? win.surface : "transparent"
+            border.width: control.flat || control.highlighted ? 0 : 1
+            border.color: win.border
+            opacity: control.enabled ? 1 : 0.4
+        }
+        contentItem: Text {
+            text: control.text; font: control.font
+            color: control.highlighted ? backend.background : backend.foreground
+            opacity: control.enabled ? 1 : 0.35
+            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+    }
     function smokeQueue() { intakeDialog.open(); queueDialog.open(); gatewayConfigDialog.open() }
 
     readonly property bool opened: !!publication.config
@@ -60,10 +85,18 @@ ApplicationWindow {
         return (filter === "all" || a.display_status === filter) && (!query || a.search.toLowerCase().indexOf(query.toLowerCase()) >= 0 || a.meta.series.indexOf(query.toLowerCase()) >= 0 || (a.meta.published_at || "").indexOf(query) >= 0)
     })
 
+    function escapeHtml(text) { return String(text || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;") }
     function say(text, error) { notice = text; noticeError = !!error }
     function guarded(action) { if (dirty) { pendingAction = action; unsavedDialog.open() } else action() }
     function openPublication(path) { backend.publicationPath = path; backend.request("inspect", {}, "open") }
     function chooseArticle(path) { guarded(function(){ backend.request("read", {article:path}, "read") }) }
+    function importBanner(url) {
+        if (!hasArticle || backend.busy) return;
+        var path = backend.localPath(url);
+        if (!path) { say("Choose a local image file.", true); return; }
+        mediaArticle = articlePath;
+        backend.request("import-media", {source:path, expected_source_hash:sourceHash}, "media");
+    }
     function changed() { if (loading || !hasArticle) return; dirty = true; editRevision++; renderTimer.restart(); recoveryTimer.restart() }
     function setMeta(key, value) { if (loading) return; var next = Object.assign({},meta); next[key] = value; meta = next; changed() }
     function docArgs() { return {article:articlePath,meta:meta,body:editor.text,expected_source_hash:sourceHash} }
@@ -92,7 +125,7 @@ ApplicationWindow {
     Shortcut { sequence: StandardKey.Save; enabled: hasArticle; onActivated: save() }
     Shortcut { sequence: StandardKey.New; enabled: opened; onActivated: newArticle() }
     Shortcut { sequence: StandardKey.Open; onActivated: guarded(function(){openFolder.open()}) }
-    Shortcut { sequence: StandardKey.Find; enabled: hasArticle; onActivated: {findBar.visible=true;findField.forceActiveFocus()} }
+    Shortcut { sequence: StandardKey.Find; enabled: hasArticle; onActivated: {showPreview=false;findBar.visible=true;findField.forceActiveFocus()} }
     Shortcut { sequence: "Ctrl+Shift+P"; enabled: opened; onActivated: requestPublish() }
     Shortcut { sequence: "Ctrl+Shift+V"; enabled: editor.activeFocus; onActivated: editor.paste() }
     Shortcut { sequence: "Ctrl+B"; enabled: editor.activeFocus; onActivated: insertMarkup("**","**") }
@@ -118,7 +151,7 @@ ApplicationWindow {
             else if(tag==="render") {rendered=v.html;exportData=v.export}
             else if(tag==="validate") {publication=Object.assign({},publication,{diagnostics:v.diagnostics});checksDialog.open()}
             else if(tag==="build") {say("Site and feeds built. Preview the exact site before publishing.");backend.startPreview(false)}
-            else if(tag==="media") {sourceHash=v.source_hash;setMeta("header_image",v.media_path);say("Image imported into this publication.")}
+            else if(tag==="media") {sourceHash=v.source_hash;if(articlePath===mediaArticle){setMeta("header_image",v.media_path);say("Banner added. Save to keep this change.")}else say("Image imported, but the selected article changed. Select it again to attach the banner.")}
             else if(tag==="settings-save") {publication=v;sourceHash=v.source_hash;settingsDialog.close();say("Publication settings saved.")}
             else if(tag==="x-status"||tag==="x-connect"||tag==="x-disconnect") {xConnection=v;say(v.connected?"X account connected.":"X disconnected.")}
             else if(tag==="substack-prepare") {say(v.message);backend.request("distribution-plan",distributionArgs(),"x-action")}
@@ -135,18 +168,19 @@ ApplicationWindow {
     }
 
     header: ToolBar {
-        padding: 8
+        padding: 16
+        background: Rectangle { color: backend.background
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: win.border }
+        }
         RowLayout {
-            anchors.fill: parent; spacing: 12
-            Label { text:"OmaPress";font.pixelSize:20;font.bold:true;Layout.leftMargin:8 }
-            Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.65 }
+            anchors.fill: parent; spacing: 10
+            Label { text:"OmaPress";font.pixelSize:21;font.bold:true;Layout.rightMargin:14 }
+            Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.55 }
             BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
-            Button { text:"Queue…";enabled:opened&&!backend.busy;onClicked:showQueue() }
-            Button { text:"Connections…";onClicked:connectionsDialog.open() }
-            Button { text:"Add article…";enabled:opened&&!backend.busy;onClicked:guarded(function(){intakeDialog.open()}) }
-            Button { text:"Save";enabled:hasArticle&&dirty;onClicked:save();Accessible.name:"Save article locally" }
-            Button { text:"Preview site";enabled:opened;onClicked:guarded(function(){backend.startPreview(true)});ToolTip.text:"Open a private local preview, including drafts";ToolTip.visible:hovered }
-            Button { text:"Publish…";highlighted:true;enabled:opened&&!backend.busy;onClicked:requestPublish() }
+            WorkspaceButton { text:"Queue";flat:true;enabled:opened&&!backend.busy;onClicked:showQueue() }
+            WorkspaceButton { text:"Connections";flat:true;onClicked:connectionsDialog.open() }
+            WorkspaceButton { text:"Add article";enabled:opened&&!backend.busy;onClicked:guarded(function(){intakeDialog.open()}) }
+            WorkspaceButton { text:"Publish…";highlighted:true;enabled:opened&&!backend.busy;onClicked:requestPublish() }
         }
     }
     ColumnLayout {
@@ -155,39 +189,45 @@ ApplicationWindow {
             visible:notice!=="";Layout.fillWidth:true;implicitHeight:noticeLabel.implicitHeight+20;color:noticeError?"#572d2d":Qt.lighter(backend.background,1.45)
             RowLayout { anchors.fill:parent;anchors.margins:10
                 Label { id:noticeLabel;text:notice;wrapMode:Text.Wrap;Layout.fillWidth:true;color:noticeError?"#fff0ee":backend.foreground;Accessible.role:Accessible.AlertMessage }
-                ToolButton { text:"×";Accessible.name:"Dismiss notification";onClicked:notice="" }
+                ToolButton {font.capitalization:Font.MixedCase; text:"×";Accessible.name:"Dismiss notification";onClicked:notice="" }
             }
         }
         RowLayout {
             Layout.fillWidth:true;Layout.fillHeight:true;spacing:0
             Pane {
-                Layout.preferredWidth:210;Layout.fillHeight:true;padding:14
+                Layout.preferredWidth:win.width>=1100?190:150;Layout.fillHeight:true;padding:14
+                background: Rectangle { color: win.surface }
                 ColumnLayout { anchors.fill:parent;spacing:8
                     Label { text:"PUBLICATION";font.pixelSize:11;font.letterSpacing:1.5;opacity:.5;Layout.topMargin:10;Layout.bottomMargin:12 }
-                    Button { text:"Open…";Layout.fillWidth:true;onClicked:guarded(function(){openFolder.open()}) }
-                    Button { text:"Create…";Layout.fillWidth:true;onClicked:guarded(function(){createDialog.open()}) }
+                    WorkspaceButton { text:"Open…";Layout.fillWidth:true;onClicked:guarded(function(){openFolder.open()}) }
+                    WorkspaceButton { text:"Create…";Layout.fillWidth:true;onClicked:guarded(function(){createDialog.open()}) }
                     Item { implicitHeight:16 }
                     Repeater { model:[{key:"all",label:"All articles"},{key:"draft",label:"Drafts"},{key:"ready",label:"Ready"},{key:"published",label:"Published"}]
-                        delegate:Button { required property var modelData;text:modelData.label;flat:true;highlighted:filter===modelData.key;Layout.fillWidth:true;onClicked:filter=modelData.key }
+                        delegate:WorkspaceButton { required property var modelData;text:modelData.label;flat:true;highlighted:filter===modelData.key;Layout.fillWidth:true;onClicked:filter=modelData.key }
                     }
                     Item { Layout.fillHeight:true }
                     Label { text:opened&&publication.state&&publication.state.pending?"Deployment needs recheck":opened&&publication.state&&publication.state.deployments.length?"Last deployment verified":"Local publication";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.65;font.pixelSize:12 }
-                    Button { text:"Deployment history";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:historyDialog.open() }
-                    Button { text:"Settings";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:guarded(function(){configEditor.text=publication.config_text;settingsDialog.open()}) }
+                    WorkspaceButton { text:"History";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:historyDialog.open() }
+                    WorkspaceButton { text:"Settings";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:guarded(function(){configEditor.text=publication.config_text;settingsDialog.open()}) }
                     Label { text:"OmaPress 0.1.0-rc.1";font.pixelSize:11;opacity:.4 }
                 }
             }
             Rectangle { Layout.fillHeight:true;implicitWidth:1;color:backend.foreground;opacity:.13 }
             ColumnLayout {
-                visible:opened;Layout.preferredWidth:260;Layout.maximumWidth:290;Layout.fillHeight:true;spacing:0
+                visible:opened;Layout.preferredWidth:win.width>=1100?260:210;Layout.maximumWidth:win.width>=1100?260:210;Layout.fillHeight:true;spacing:0
                 RowLayout { Layout.fillWidth:true;Layout.margins:12
                     TextField { placeholderText:"Search articles…";Layout.fillWidth:true;onTextChanged:query=text;Accessible.name:"Search title, text, tags, series and date" }
-                    ToolButton { text:"+";Accessible.name:"New article";onClicked:newArticle() }
+                    ToolButton {font.capitalization:Font.MixedCase; text:"+";Accessible.name:"New article";onClicked:newArticle() }
                 }
                 ListView {
                     id:articleList;Layout.fillWidth:true;Layout.fillHeight:true;clip:true;model:shownArticles;spacing:1
                     delegate:ItemDelegate {
-                        required property var modelData;width:articleList.width;height:118;highlighted:articlePath===modelData.path
+                        required property var modelData;width:articleList.width;height:116;highlighted:articlePath===modelData.path
+                        leftPadding:20;rightPadding:16;topPadding:16;bottomPadding:16
+                        background: Rectangle {
+                            color: parent.highlighted ? win.surface : parent.hovered ? Qt.lighter(backend.background, 1.1) : "transparent"
+                            Rectangle { width:3; height:parent.height-24; anchors.verticalCenter:parent.verticalCenter; color:backend.accent; visible:articlePath===modelData.path }
+                        }
                         contentItem:ColumnLayout {spacing:5
                             Label {text:modelData.display_status.toUpperCase()+" · "+(modelData.meta.published_at||"").slice(0,10);font.pixelSize:10;font.letterSpacing:.7;color:backend.accent}
                             Label {text:modelData.meta.title||"Untitled article";font.bold:true;wrapMode:Text.Wrap;maximumLineCount:2;elide:Text.ElideRight;Layout.fillWidth:true}
@@ -198,55 +238,97 @@ ApplicationWindow {
                     Label {anchors.centerIn:parent;visible:articleList.count===0;text:"No articles here yet";opacity:.5}
                     ScrollBar.vertical:ScrollBar {}
                 }
-                Button {text:"Import Markdown…";Layout.fillWidth:true;Layout.margins:10;onClicked:guarded(function(){articleImport.open()})}
+                WorkspaceButton {text:"Import Markdown…";Layout.fillWidth:true;Layout.margins:10;onClicked:guarded(function(){articleImport.open()})}
             }
             Rectangle {visible:opened;Layout.fillHeight:true;implicitWidth:1;color:backend.foreground;opacity:.13}
             ColumnLayout {
                 visible:hasArticle;Layout.fillWidth:true;Layout.fillHeight:true;spacing:0
-                RowLayout {Layout.fillWidth:true;Layout.margins:10
-                    Label {text:dirty?"Unsaved changes":"Saved locally";font.pixelSize:12;opacity:.65;Layout.fillWidth:true}
-                    ToolButton {text:"Metadata";onClicked:metadataDialog.open()}
-                    ToolButton {text:"Checks";onClicked:guarded(function(){backend.request("validate",{},"validate")})}
-                    ToolButton {text:"Publish article…";enabled:!backend.busy;onClicked:requestPublish()}
-                    ToolButton {text:"X export";onClicked:{renderNow();exportDialog.open()}}
-                    ToolButton {text:showPreview?"Hide preview":"Show preview";onClicked:showPreview=!showPreview}
-                }
-                TextField {text:meta.title||"";placeholderText:meta.title?"":"Your editorial title";font.pixelSize:27;font.bold:true;Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;background:Item{} onTextEdited:setMeta("title",text);Accessible.name:"Editorial title"}
-                TextField {text:meta.summary||"";placeholderText:meta.summary?"":"A short summary for the site and feeds";Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;background:Item{} onTextEdited:setMeta("summary",text);Accessible.name:"Article summary"}
-                RowLayout {Layout.leftMargin:18;Layout.rightMargin:18
-                    ToolButton {text:"H2";Accessible.name:"Insert heading";onClicked:insertMarkup("\n## ","\n")}
-                    ToolButton {text:"B";font.bold:true;Accessible.name:"Bold";onClicked:insertMarkup("**","**")}
-                    ToolButton {text:"I";font.italic:true;Accessible.name:"Italic";onClicked:insertMarkup("*","*")}
-                    ToolButton {text:"Link";onClicked:insertMarkup("[","](https://)")}
-                    ToolButton {text:"List";onClicked:insertMarkup("\n- ","\n")}
-                    ToolButton {text:"Code";onClicked:insertMarkup("\n```\n","\n```\n")}
+                RowLayout {Layout.fillWidth:true;Layout.margins:20;spacing:8
+                    RowLayout { spacing:2
+                        WorkspaceButton { objectName:"markdownTab";text:"Markdown";checkable:true;checked:!showPreview;highlighted:checked;onClicked:{showPreview=false;editor.forceActiveFocus()} }
+                        WorkspaceButton { objectName:"previewTab";text:"Preview";checkable:true;checked:showPreview;highlighted:checked;onClicked:{showPreview=true;findBar.visible=false;renderNow()} }
+                    }
                     Item {Layout.fillWidth:true}
-                    ToolButton {text:"Undo";enabled:editor.canUndo;onClicked:editor.undo()}
-                    ToolButton {text:"Redo";enabled:editor.canRedo;onClicked:editor.redo()}
+                    Label {visible:win.width>=1100;text:dirty?"Unsaved changes":"Saved locally";font.pixelSize:12;opacity:.55}
+                    WorkspaceButton {text:"Save";enabled:dirty&&!backend.busy;onClicked:save()}
+                    WorkspaceButton {text:"Details";flat:true;onClicked:metadataDialog.open()}
+                    WorkspaceButton {text:"More";flat:true;onClicked:articleMenu.open()
+                        Menu {id:articleMenu
+                            MenuItem {text:"Check publication";onTriggered:guarded(function(){backend.request("validate",{},"validate")})}
+                            MenuItem {text:"Preview website";onTriggered:guarded(function(){backend.startPreview(true)})}
+                            MenuItem {text:"Export for X";onTriggered:{renderNow();exportDialog.open()}}
+                        }
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth:true;Layout.leftMargin:40;Layout.rightMargin:40;Layout.bottomMargin:16
+                    Layout.preferredHeight:meta.header_image?Math.min(190,win.height*0.22):70
+                    radius:8;color:bannerDrop.containsDrag?Qt.lighter(win.surface,1.4):win.surface
+                    border.width:1;border.color:bannerDrop.containsDrag?backend.accent:win.border
+                    Image {
+                        id:bannerImage;anchors.fill:parent;anchors.margins:8
+                        source: { var publication = backend.publicationPath; return meta.header_image ? backend.bannerUrl(meta.header_image) : "" }
+                        fillMode:Image.PreserveAspectFit;asynchronous:true
+                        Accessible.name:"Article banner"
+                    }
+                    Label {
+                        anchors.centerIn:parent;visible:!meta.header_image||bannerImage.status===Image.Error||bannerImage.status===Image.Null
+                        text:meta.header_image?"Banner unavailable — replace the image":"Drop banner artwork here"
+                        color:backend.foreground;opacity:.6
+                    }
+                    DropArea {
+                        id:bannerDrop;anchors.fill:parent;enabled:!backend.busy
+                        onEntered:function(drag){drag.accepted=drag.hasUrls&&drag.urls.length===1}
+                        onDropped:function(drop){if(drop.hasUrls&&drop.urls.length===1){importBanner(drop.urls[0]);drop.acceptProposedAction()}}
+                    }
+                    Row {
+                        anchors.right:parent.right;anchors.bottom:parent.bottom;anchors.margins:8;spacing:6
+                        WorkspaceButton {text:meta.header_image?"Replace":"Add banner";enabled:!backend.busy;highlighted:true;onClicked:mediaImport.open()}
+                        WorkspaceButton {text:"Remove";visible:!!meta.header_image;enabled:!backend.busy;onClicked:{setMeta("header_image",null);say("Banner removed from this article. Save to keep this change.")}
+                            background:Rectangle {radius:6;color:backend.background;border.width:1;border.color:win.border}
+                        }
+                    }
+                }
+                TextField {visible:!showPreview;text:meta.title||"";placeholderText:meta.title?"":"Your editorial title";font.pixelSize:27;font.bold:true;Layout.fillWidth:true;Layout.leftMargin:40;Layout.rightMargin:40;background:Item{} onTextEdited:setMeta("title",text);Accessible.name:"Editorial title"}
+                TextField {visible:!showPreview;text:meta.summary||"";placeholderText:meta.summary?"":"A short summary for the site and feeds";Layout.fillWidth:true;Layout.leftMargin:40;Layout.rightMargin:40;background:Item{} onTextEdited:setMeta("summary",text);Accessible.name:"Article summary"}
+                RowLayout {visible:!showPreview;Layout.fillWidth:true;Layout.leftMargin:32;Layout.rightMargin:32
+                    ToolButton {font.capitalization:Font.MixedCase;text:"H2";Accessible.name:"Insert heading";onClicked:insertMarkup("\n## ","\n")}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"B";font.bold:true;Accessible.name:"Bold";onClicked:insertMarkup("**","**")}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"I";font.italic:true;Accessible.name:"Italic";onClicked:insertMarkup("*","*")}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"Link";onClicked:insertMarkup("[","](https://)")}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"List";onClicked:insertMarkup("\n- ","\n")}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"Code";onClicked:insertMarkup("\n```\n","\n```\n")}
+                    Item {Layout.fillWidth:true}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"Undo";enabled:editor.canUndo;onClicked:editor.undo()}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"Redo";enabled:editor.canRedo;onClicked:editor.redo()}
                 }
                 RowLayout {id:findBar;visible:false;Layout.fillWidth:true;Layout.margins:12
                     TextField {id:findField;placeholderText:"Find in article";Layout.fillWidth:true;onAccepted:findNext();Accessible.name:"Find in article"}
-                    Button {text:"Next";onClicked:findNext()}
-                    ToolButton {text:"×";Accessible.name:"Close find";onClicked:findBar.visible=false}
+                    WorkspaceButton {text:"Next";onClicked:findNext()}
+                    ToolButton {font.capitalization:Font.MixedCase;text:"×";Accessible.name:"Close find";onClicked:findBar.visible=false}
                 }
-                SplitView {
-                    Layout.fillWidth:true;Layout.fillHeight:true;orientation:Qt.Horizontal
+                Item {
+                    Layout.fillWidth:true;Layout.fillHeight:true
                     ScrollView {
-                        SplitView.fillWidth:true;SplitView.minimumWidth:250;clip:true
-                        TextArea {id:editor;textFormat:TextEdit.PlainText;wrapMode:TextEdit.Wrap;selectByMouse:true;font.family:"monospace";font.pixelSize:15;leftPadding:24;rightPadding:24;topPadding:20;bottomPadding:80;placeholderText:editor.text?"":"Start writing in Markdown…";onTextChanged:changed();Accessible.name:"Markdown article body"}
+                        anchors.fill:parent;visible:!showPreview;id:markdownView;objectName:"markdownView";clip:true
+                        Flickable { clip:true; boundsBehavior:Flickable.StopAtBounds
+                        TextArea.flickable: TextArea {id:editor;textFormat:TextEdit.PlainText;wrapMode:TextEdit.Wrap;selectByMouse:true;font.family:"monospace";font.pixelSize:16;leftPadding:40;rightPadding:40;topPadding:24;bottomPadding:80;placeholderText:"Paste your article or start writing in Markdown…";onTextChanged:changed();Accessible.name:"Markdown article body";background:Item{}}
+                        }
                     }
                     ScrollView {
-                        visible:showPreview&&win.width>=1150;SplitView.preferredWidth:Math.max(260,win.width*0.25);SplitView.minimumWidth:220;clip:true
-                        TextArea {text:rendered;textFormat:TextEdit.RichText;readOnly:true;selectByMouse:true;wrapMode:TextEdit.Wrap;font.family:"serif";font.pixelSize:18;leftPadding:24;rightPadding:24;topPadding:20;bottomPadding:80;onLinkActivated:function(link){backend.openUrl(link)} Accessible.name:"Rendered article preview"}
+                        anchors.fill:parent;visible:showPreview;id:previewView;objectName:"previewView";clip:true
+                        Flickable { clip:true; boundsBehavior:Flickable.StopAtBounds
+                        TextArea.flickable: TextArea {id:previewText;text:"<h1>"+escapeHtml(meta.title||"Untitled article")+"</h1><p>"+escapeHtml(meta.summary)+"</p><br>"+rendered;textFormat:TextEdit.RichText;readOnly:true;selectByMouse:true;wrapMode:TextEdit.Wrap;font.family:win.font.family;font.pixelSize:18;leftPadding:40;rightPadding:40;topPadding:24;bottomPadding:80;onLinkActivated:function(link){backend.openUrl(link)} Accessible.name:"Rendered article preview";background:Item{}}
+                        }
                     }
                 }
-                Label {text:(editor.text.trim()?editor.text.trim().split(/\s+/).length:0)+" words · Markdown · "+(meta.series||"");font.pixelSize:11;opacity:.5;Layout.margins:12}
+                Label {text:(editor.text.trim()?editor.text.trim().split(/\s+/).length:0)+" words · "+(showPreview?"Preview":"Markdown")+" · "+(meta.series||"");font.pixelSize:11;opacity:.5;Layout.margins:12}
             }
             Item {visible:!hasArticle;Layout.fillWidth:true;Layout.fillHeight:true
                 ColumnLayout {anchors.centerIn:parent;width:Math.min(parent.width-64,480);spacing:18
                     Label {text:opened?"Make room for your next story.":"A home for your publication.";font.pixelSize:32;font.bold:true;wrapMode:Text.Wrap;Layout.fillWidth:true}
                     Label {text:opened?"Write locally, review the site, then publish. Your articles and feeds stay yours.":"Keep your articles in a folder you own. Build a website and feeds, then take your words to X.";font.pixelSize:17;wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.6}
-                    Button {text:opened?"Write an article":"Create a publication";highlighted:true;onClicked:opened?newArticle():createDialog.open()}
+                    WorkspaceButton {text:opened?"Write an article":"Create a publication";highlighted:true;onClicked:opened?newArticle():createDialog.open()}
                 }
             }
         }
@@ -254,7 +336,7 @@ ApplicationWindow {
 
     FolderDialog {id:openFolder;title:"Open publication folder";onAccepted:openPublication(backend.localPath(selectedFolder))}
     FolderDialog {id:createParent;title:"Choose where to create the publication";onAccepted:createPath.text=backend.localPath(selectedFolder)+"/fixing-everything"}
-    FileDialog {id:mediaImport;title:"Import header image";nameFilters:["Images (*.png *.jpg *.jpeg *.webp *.gif *.avif)"];onAccepted:backend.request("import-media",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"media")}
+    FileDialog {id:mediaImport;title:"Import header image";nameFilters:["Images (*.png *.jpg *.jpeg *.webp *.gif *.avif)"];onAccepted:importBanner(selectedFile)}
     FileDialog {id:articleImport;title:"Import Markdown article with OmaPress front matter";nameFilters:["Markdown (*.md)"];onAccepted:backend.request("import-article",{source:backend.localPath(selectedFile),expected_source_hash:sourceHash},"import")}
 
     Dialog {id:createDialog;title:"Create a publication";modal:true;anchors.centerIn:parent;width:540;standardButtons:Dialog.Cancel

@@ -11,6 +11,8 @@ OmaPress is a native publishing application for Omarchy. It turns Markdown and l
 - **Your archive:** stable article URLs and feed identities survive corrections.
 - **Your recovery:** interrupted deployments can be rechecked and verified versions can be republished.
 
+The editor has a full-width **Markdown / Preview** switch. Preview shows the title, summary and rendered body together; returning to Markdown keeps the same editor and undo history. Add banner artwork above the title using **Add banner** or drag-and-drop. **Replace** changes it; **Remove** detaches it without deleting the media file. Save to retain changes. The banner is visible in both Markdown and Preview. Details and secondary actions are available beside Save.
+
 The desktop uses C++ and Qt 6/QML. The Rust CLI is independently useful. No account or network connection is required for writing, building or local preview. GitHub Pages is the first deployment target; authentication stays with `gh`. The publishing panel tracks website, X and Substack separately. X has browser sign-in, keyring token refresh, and an experimental rich-content API adapter with cover/body image upload. Substack has a local outbox and optional browser companion that fills a blank draft. **Substack still requires its final audience/email review and Publish action in the browser.** See [distribution status and connections](docs/distribution.md) and [Substack companion setup](docs/substack-companion.md).
 
 Existing development install? See the [OmaPress upgrade notes](docs/renaming.md).
