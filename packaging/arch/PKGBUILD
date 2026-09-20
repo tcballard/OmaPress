@@ -1,7 +1,7 @@
 # Maintainer: Tom Ballard (tcballard)
 pkgname=omapress
 pkgver=0.1.0rc1.r20260919
-_commit=5a2a681598d41a45d6b732cfa6be80045b40671c
+_commit=9c67a20d2e7ed86e00dfeb0806f39db7d984b847
 pkgrel=3
 pkgdesc='Native local-first publishing for Omarchy'
 arch=('x86_64')
@@ -16,7 +16,7 @@ makedepends=('rust' 'cmake')
 checkdepends=('python' 'desktop-file-utils')
 # Development snapshot: immutable source, not an upstream stable release.
 source=("$pkgname-$_commit.tar.gz::https://codeload.github.com/tcballard/OmaPress/tar.gz/$_commit")
-sha256sums=('66ce71f0a13f106d82f6885bbc5b1951d063066c27803eb1170f0199613b91f3')
+sha256sums=('f6704acfed07cd8e565c2a58a7945dc5e56c6c6fe9523cb25641163e8a132abf')
 build() {
   cd "OmaPress-$_commit"
   cargo build --release --locked
