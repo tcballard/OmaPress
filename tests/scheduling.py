@@ -44,7 +44,7 @@ class SchedulingTests(DistributionTests):
         self.assertEqual(self.rpc('queue-run')['jobs'][0]['status'],'needs_review')
         self.assertFalse(self.calls.exists())
     def test_failed_provider_stays_for_review(self):
-        self.env['PRESSROOM_TEST_FAILURE']='1'
+        self.env['OMAPRESS_TEST_FAILURE']='1'
         self.rpc('queue-add',**self.add());self.due()
         self.assertEqual(self.rpc('queue-run')['jobs'][0]['status'],'needs_review')
         before=self.calls.read_text();self.rpc('queue-run');self.assertEqual(before,self.calls.read_text())
@@ -82,8 +82,13 @@ class SchedulingTests(DistributionTests):
         self.assertIn('schema',self.rpc('queue-list',expect=False))
     def test_headless_credentials_permissions(self):
         p=self.root/'x.json';p.write_text('{"access_token":"test-user-token"}');p.chmod(0o600)
-        self.env['PRESSROOM_X_CREDENTIALS_FILE']=str(p)
+        self.env['OMAPRESS_X_CREDENTIALS_FILE']=str(p)
         self.rpc('x-status')
+        self.env['PRESSROOM_X_CREDENTIALS_FILE']=self.env.pop('OMAPRESS_X_CREDENTIALS_FILE')
+        self.rpc('x-status')
+        self.env['OMAPRESS_X_CREDENTIALS_FILE']=str(self.root/'missing.json')
+        self.rpc('x-status',expect=False)
+        del self.env['OMAPRESS_X_CREDENTIALS_FILE']
         p.chmod(0o644)
         self.assertIn('owner-only',self.rpc('x-status',expect=False))
 

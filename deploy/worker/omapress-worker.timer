@@ -1,11 +1,11 @@
 [Unit]
-Description=Check Pressroom publishing queue every minute
+Description=Check OmaPress publishing queue every minute
 
 [Timer]
 OnBootSec=30s
 OnUnitInactiveSec=60s
 AccuracySec=1s
-Unit=pressroom-worker.service
+Unit=omapress-worker.service
 
 [Install]
 WantedBy=timers.target

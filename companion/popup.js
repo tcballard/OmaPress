@@ -3,10 +3,10 @@ const $=id=>document.getElementById(id);
 let tab;
 async function native(command,args={}) {
     const response=await chrome.runtime.sendNativeMessage('com.pressroom.companion',{command,...args});
-    if (!response?.ok) throw Error(response?.error || 'Pressroom companion returned an invalid response.');
+    if (!response?.ok) throw Error(response?.error || 'OmaPress companion returned an invalid response.');
     return response.result;
 }
-const selected=()=>{const id=$('articles').value;if(!id)throw Error('Prepare an article in Pressroom first.');return id;};
+const selected=()=>{const id=$('articles').value;if(!id)throw Error('Prepare an article in OmaPress first.');return id;};
 async function action(task) {
     for(const id of ['fill','confirm','remove'])$(id).disabled=true;
     try {await task();} catch(error){$('status').textContent=error.message;}
@@ -23,7 +23,7 @@ function enable() {
 async function refresh() {
     const {items}=await native('list');
     $('articles').replaceChildren(...items.map(item=>new Option(item.title,item.id)));
-    $('status').textContent=items.length?'Choose the matching article before filling or recording a page.':'Use Prepare Substack in Pressroom to add an article.';
+    $('status').textContent=items.length?'Choose the matching article before filling or recording a page.':'Use Prepare Substack in OmaPress to add an article.';
     enable();
 }
 $('articles').onchange=enable;
@@ -51,11 +51,11 @@ $('confirm').onclick=()=>action(async()=>{
     const url=new URL(current.url);
     if(url.protocol!=='https:'||!url.pathname.startsWith('/p/'))throw Error('Open the published article page before recording its URL.');
     await native('confirm',{id:selected(),url:current.url});
-    $('status').textContent='Published URL recorded as confirmed by you. Refresh the article’s destination status in Pressroom.';
+    $('status').textContent='Published URL recorded as confirmed by you. Refresh the article’s destination status in OmaPress.';
 });
 $('remove').onclick=()=>action(async()=>{await native('remove',{id:selected()});await refresh();});
 try {
     [tab]=await chrome.tabs.query({active:true,currentWindow:true});
     $('destination').textContent=tab?.url?`Current page: ${new URL(tab.url).hostname}`:'Open your Substack editor.';
     await refresh();
-}catch(error){$('status').textContent=`${error.message}\nInstall the native companion host as described in Pressroom’s Connections help.`;}
+}catch(error){$('status').textContent=`${error.message}\nInstall the native companion host as described in OmaPress’s Connections help.`;}

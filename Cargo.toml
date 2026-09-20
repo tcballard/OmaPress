@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/pressroom-core", "crates/pressroom-cli"]
+members = ["crates/omapress-core", "crates/omapress-cli"]
 resolver = "2"
 
 [workspace.package]

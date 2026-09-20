@@ -5,7 +5,7 @@ No GitHub account, network or real publication is touched.
 """
 import json, os, pathlib, shutil, subprocess, tempfile, unittest
 ROOT=pathlib.Path(__file__).resolve().parents[1]
-CLI=pathlib.Path(os.environ.get('PRESSROOM_CLI',ROOT/'target/debug/pressroom')).resolve()
+CLI=pathlib.Path(os.environ.get('OMAPRESS_CLI',ROOT/'target/debug/omapress')).resolve()
 GIT=shutil.which('git')
 class DeploymentTests(unittest.TestCase):
     def setUp(self):

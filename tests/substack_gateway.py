@@ -10,10 +10,10 @@ class GatewayTests(DistributionTests):
         self.config=self.root/'gateway.json'
         self.config.write_text(json.dumps(dict(gateway_url='http://127.0.0.1:5001',publication_url='https://test.substack.com',substack_sid='secret-session',connect_sid='')))
         self.config.chmod(0o600)
-        self.env['PRESSROOM_SUBSTACK_GATEWAY_CREDENTIALS_FILE']=str(self.config)
+        self.env['OMAPRESS_SUBSTACK_GATEWAY_CREDENTIALS_FILE']=str(self.config)
         self.tool('curl',"""import os,sys,json
 from pathlib import Path
-p=Path(os.environ['PRESSROOM_TEST_CALLS'])
+p=Path(os.environ['OMAPRESS_TEST_CALLS'])
 url=sys.argv[-1];method=sys.argv[sys.argv.index('--request')+1]
 with p.open('a') as f:f.write(method+' '+url+'\\n')
 payload=json.loads(Path(sys.argv[sys.argv.index('--data-binary')+1][1:]).read_text()) if '--data-binary' in sys.argv else None

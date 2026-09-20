@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
-use pressroom_core::{
+use omapress_core::{
     preview,
     protocol::{self, Request},
 };
@@ -192,7 +192,7 @@ fn execute(command: Command) -> Result<Value> {
 fn main() {
     let cli = Cli::parse();
     if let Command::NativeMessage { origin } = &cli.command {
-        if pressroom_core::substack::native(origin).is_err() {
+        if omapress_core::substack::native(origin).is_err() {
             std::process::exit(1);
         }
         return;

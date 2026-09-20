@@ -13,7 +13,7 @@ const ATTRS: &[&str] = &["application", "pressroom", "service", "x"];
 fn secret(operation: &str, input: &[u8]) -> Result<String> {
     let mut args = vec![operation];
     if operation == "store" {
-        args.push("--label=Pressroom X account");
+        args.push("--label=OmaPress X account");
     }
     args.extend_from_slice(ATTRS);
     process::run_input("secret-tool", &args, None, Duration::from_secs(15), input).map_err(|_| {
@@ -25,7 +25,9 @@ fn secret(operation: &str, input: &[u8]) -> Result<String> {
 // Explicit headless-worker opt-in. Desktop defaults remain Secret Service.
 fn worker_credentials() -> Result<Option<std::path::PathBuf>> {
     use std::os::unix::fs::MetadataExt;
-    let Some(path) = std::env::var_os("PRESSROOM_X_CREDENTIALS_FILE") else {
+    let Some(path) = std::env::var_os("OMAPRESS_X_CREDENTIALS_FILE")
+        .or_else(|| std::env::var_os("PRESSROOM_X_CREDENTIALS_FILE"))
+    else {
         return Ok(None);
     };
     let path = std::path::PathBuf::from(path);
@@ -231,11 +233,11 @@ pub fn connect(client: &str) -> Result<Value> {
         }
         let result = callback(std::str::from_utf8(&bytes).unwrap_or(""), &state);
         let (code, message) = if result.is_ok() {
-            ("200 OK", "Authorization received. Return to Pressroom.")
+            ("200 OK", "Authorization received. Return to OmaPress.")
         } else {
             (
                 "400 Bad Request",
-                "Invalid authorization callback. Return to Pressroom and retry sign-in.",
+                "Invalid authorization callback. Return to OmaPress and retry sign-in.",
             )
         };
         let _ = write!(

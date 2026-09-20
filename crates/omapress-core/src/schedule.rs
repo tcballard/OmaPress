@@ -316,7 +316,7 @@ pub fn remote(_root: &Path, args: &Value) -> Result<Value> {
             "-o",
             "ClearAllForwardings=yes",
             host,
-            "pressroom rpc",
+            "omapress rpc",
         ],
         None,
         Duration::from_secs(45),
@@ -377,7 +377,7 @@ pub fn receive(root: &Path, args: &Value) -> Result<Value> {
         "Invalid publication transfer"
     );
     let stage = tempfile::Builder::new()
-        .prefix(".pressroom-upload-")
+        .prefix(".omapress-upload-")
         .tempdir_in(parent)?;
     fs::set_permissions(stage.path(), fs::Permissions::from_mode(0o700))?;
     for (name, data) in &files {

@@ -1,10 +1,10 @@
-# Pressroom
+# OmaPress
 
 <img alt="Built for Omarchy: App" height="20" src="https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg">
 
 Write locally. Publish a website and feeds. Take your words with you.
 
-Pressroom is a native publishing application for Omarchy. It turns Markdown and local images into a static website, full-content RSS, Atom and JSON feeds, and separate article/caption exports for X Articles.
+OmaPress is a native publishing application for Omarchy. It turns Markdown and local images into a static website, full-content RSS, Atom and JSON feeds, and separate article/caption exports for X Articles.
 
 - **Your files:** articles, settings and media remain in a folder you own.
 - **Your review:** a publish confirmation is tied to the exact source you reviewed.
@@ -12,6 +12,8 @@ Pressroom is a native publishing application for Omarchy. It turns Markdown and 
 - **Your recovery:** interrupted deployments can be rechecked and verified versions can be republished.
 
 The desktop uses C++ and Qt 6/QML. The Rust CLI is independently useful. No account or network connection is required for writing, building or local preview. GitHub Pages is the first deployment target; authentication stays with `gh`. The publishing panel tracks website, X and Substack separately. X has browser sign-in, keyring token refresh, and an experimental rich-content API adapter with cover/body image upload. Substack has a local outbox and optional browser companion that fills a blank draft. **Substack still requires its final audience/email review and Publish action in the browser.** See [distribution status and connections](docs/distribution.md) and [Substack companion setup](docs/substack-companion.md).
+
+Existing development install? See the [OmaPress upgrade notes](docs/renaming.md).
 
 ## Build and run
 
@@ -21,31 +23,31 @@ On Omarchy/Arch, install `base-devel cmake qt6-base qt6-declarative qt6-wayland 
 cargo build --release --locked
 cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release
 cmake --build build/desktop --parallel 2
-PRESSROOM_CLI="$PWD/target/release/pressroom" build/desktop/pressroom-desktop
+OMAPRESS_CLI="$PWD/target/release/omapress" build/desktop/omapress-desktop
 ```
 
 Create a publication from the desktop, or use the CLI:
 
 ```sh
-pressroom init ~/Publications/my-publication --name 'My publication' \
+omapress init ~/Publications/my-publication --name 'My publication' \
   --author 'Your name' --base-url 'https://your-confirmed-domain.example'
-pressroom inspect ~/Publications/my-publication --json
+omapress inspect ~/Publications/my-publication --json
 ```
 
 Write articles with schema 1 front matter. The [sample publication](fixtures/fixing-everything/) contains three explicitly labelled sample editions. Use `inspect` to obtain `result.source_hash`, then:
 
 ```sh
-pressroom build ~/Publications/my-publication --expected-source-hash HASH --json
-pressroom feed-check ~/Publications/my-publication --json
-pressroom preview ~/Publications/my-publication --json
-pressroom export-x ~/Publications/my-publication/content/series/article.md --format text
+omapress build ~/Publications/my-publication --expected-source-hash HASH --json
+omapress feed-check ~/Publications/my-publication --json
+omapress preview ~/Publications/my-publication --json
+omapress export-x ~/Publications/my-publication/content/series/article.md --format text
 ```
 
 The preview prints a private loopback URL and runs only while explicitly open. Add `--drafts` to preview drafts. The desktop automatically closes its preview child on exit.
 
 ## Publishing
 
-1. Run `gh auth login` outside Pressroom.
+1. Run `gh auth login` outside OmaPress.
 2. Select or create a destination repository and save it in publication settings.
 3. Mark reviewed articles Ready, set their dates, then save and run checks.
 4. Open the local site preview and inspect it.
@@ -62,7 +64,7 @@ Use separate private source and public output repositories. Keep `.omapress/` ba
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 python3 tests/deployment.py
-QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software build/desktop/pressroom-desktop --smoke
+QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software build/desktop/omapress-desktop --smoke
 ```
 
 The first release candidate requires Tom's real Omarchy acceptance: keyboard and accessibility checks, RSS reader subscription, current X Article paste behaviour, XPS performance, and the real Fixing Everything import/domain launch. Sample fixtures are not the publication's real articles.
@@ -73,9 +75,9 @@ MIT licence. The real Fixing Everything publication is separate from this produc
 
 ## Upgrading from OmaPress
 
-The app and binaries are now `pressroom` / `pressroom-desktop`. Open existing publication folders directly; `.omapress/` remains the private recovery/deployment directory so no history migration is required. The previous desktop last-publication setting and `OMAPRESS_CLI` override are read as fallbacks. The GitHub repository remains `tcballard/OmaPress` during development.
+The app and binaries are now `omapress` / `omapress-desktop`. Open existing publication folders directly; `.omapress/` remains the private recovery/deployment directory so no history migration is required. The previous desktop last-publication setting and `OMAPRESS_CLI` override are read as fallbacks. The GitHub repository remains `tcballard/OmaPress` during development.
 
-For a package installation, uninstall with `sudo pacman -R pressroom`; publication folders and private recovery history are user data and must be retained. To roll back, install the previous package and reopen the same folder. New distribution receipts are separate from the old deployment ledger. No live Omarchy version or App Store acceptance is claimed.
+For a package installation, uninstall with `sudo pacman -R omapress`; publication folders and private recovery history are user data and must be retained. To roll back, install the previous package and reopen the same folder. New distribution receipts are separate from the old deployment ledger. No live Omarchy version or App Store acceptance is claimed.
 
 ### Paste and schedule
 

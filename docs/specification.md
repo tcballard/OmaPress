@@ -3,7 +3,7 @@
 # Native Omarchy publishing specification
 
 Status: Proposed
-Product name: Pressroom
+Product name: OmaPress
 Canonical repository: https://github.com/tcballard/OmaPress
 First publication: Fixing Everything
 Target platform: Omarchy Quattro
@@ -11,9 +11,9 @@ Document date: 4 September 2026
 
 ## 1. Product statement
 
-Pressroom is a local-first publishing application for Omarchy. It turns Markdown articles and local media into a fast static website, valid RSS feeds and copy-ready versions for X Articles.
+OmaPress is a local-first publishing application for Omarchy. It turns Markdown articles and local media into a fast static website, valid RSS feeds and copy-ready versions for X Articles.
 
-The canonical product repository is [`tcballard/Pressroom`](https://github.com/tcballard/OmaPress). Product code, specifications, tests, packaging and release automation live there. The lowercase name `pressroom` is reserved for installed binaries, commands and machine-readable identifiers.
+The canonical product repository is [`tcballard/OmaPress`](https://github.com/tcballard/OmaPress). Product code, specifications, tests, packaging and release automation live there. The lowercase name `omapress` is reserved for installed binaries, commands and machine-readable identifiers.
 
 It is not a hosted newsletter service. The author owns the source files, generated site and Git history. Publishing should work without a proprietary CMS account. Email delivery can be attached later without changing the publication or its URLs.
 
@@ -56,7 +56,7 @@ This is a single-author product in version 1. Multiple authors, editorial permis
 
 ### First-time setup
 
-1. Open Pressroom.
+1. Open OmaPress.
 2. Create a publication or open an existing publication folder.
 3. Enter the publication name, description, canonical domain and author.
 4. Choose a publishing target. Version 1 supports GitHub Pages.
@@ -204,11 +204,11 @@ Copy article places both HTML and plain text on the clipboard. The HTML version 
 
 The export strips publication-only elements such as the site navigation and RSS prompt. It includes the masthead, edition label, editorial title and date in the configured order.
 
-Before copying, Pressroom shows unsupported constructs and the resulting X version. It never silently removes content.
+Before copying, OmaPress shows unsupported constructs and the resulting X version. It never silently removes content.
 
 ## 10. Native architecture
 
-Pressroom is a standalone desktop application. It is not loaded inside the long-running Omarchy shell.
+OmaPress is a standalone desktop application. It is not loaded inside the long-running Omarchy shell.
 
 This keeps publishing failures away from the bar, lock screen and other session-critical services. It also gives the editor a normal resizable window, file dialogs and desktop lifecycle.
 
@@ -216,8 +216,8 @@ This keeps publishing failures away from the bar, lock screen and other session-
 
 | Component | Technology | Responsibility |
 | --- | --- | --- |
-| `pressroom-desktop` | Qt 6 and QML | Native interface, editor, preview, clipboard, file selection |
-| `pressroom` | Rust CLI | Parse, validate, build, preview and deploy |
+| `omapress-desktop` | Qt 6 and QML | Native interface, editor, preview, clipboard, file selection |
+| `omapress` | Rust CLI | Parse, validate, build, preview and deploy |
 | Theme bundle | HTML, CSS and templates | Static public presentation |
 | Publication repository | Markdown, TOML and media | User-owned source of truth |
 
@@ -230,14 +230,14 @@ The CLI remains independently useful for terminal workflows, agents and CI.
 The canonical repository starts with this structure:
 
 ```text
-Pressroom/
+OmaPress/
   AGENTS.md
   LICENSE
   README.md
   Cargo.toml
   crates/
-    pressroom-core/
-    pressroom-cli/
+    omapress-core/
+    omapress-cli/
   desktop/
     CMakeLists.txt
     src/
@@ -270,15 +270,15 @@ The `fixtures/fixing-everything/` publication is a small sanitised corpus used f
 ### Command contract
 
 ```text
-pressroom init PATH
-pressroom inspect PATH --json
-pressroom validate PATH --json
-pressroom build PATH --output PATH --json
-pressroom preview PATH --bind 127.0.0.1 --port 0 --json
-pressroom publish PATH --expected-source-hash HASH --json
-pressroom export-x ARTICLE --format html
-pressroom export-x ARTICLE --format text
-pressroom feed-check PATH --json
+omapress init PATH
+omapress inspect PATH --json
+omapress validate PATH --json
+omapress build PATH --output PATH --json
+omapress preview PATH --bind 127.0.0.1 --port 0 --json
+omapress publish PATH --expected-source-hash HASH --json
+omapress export-x ARTICLE --format html
+omapress export-x ARTICLE --format text
+omapress feed-check PATH --json
 ```
 
 Every mutating command accepts an expected source hash. If the files changed after review, the command stops instead of deploying a different tree.
@@ -311,7 +311,7 @@ Rollback republishes a previous verified deployment. It never rewrites article s
 - Templates cannot invoke shell commands or access arbitrary files.
 - Preview binds to `127.0.0.1` on an automatically selected port.
 - Git operations show the exact repository, branch and commit before the first publish.
-- Authentication stays with `gh`; Pressroom stores no GitHub token.
+- Authentication stays with `gh`; OmaPress stores no GitHub token.
 - Publishing refuses dirty generated worktrees, unexpected remote movement and invalid feed output.
 - External images generate a warning. The preferred path is to import them into publication media.
 - Secrets, drafts and local state are excluded from generated output by construction.
@@ -396,7 +396,7 @@ These are release targets and require measurement on Omarchy hardware. They are 
 
 ### Email delivery
 
-Add an adapter that sends published posts through a specialist provider. The RSS feed remains the source. Pressroom should not implement mail reputation, bounce handling or unsubscribe compliance itself.
+Add an adapter that sends published posts through a specialist provider. The RSS feed remains the source. OmaPress should not implement mail reputation, bounce handling or unsubscribe compliance itself.
 
 ### Scheduled publication
 
@@ -438,7 +438,7 @@ None of these decisions blocks the publication engine or RSS work.
 
 ## 21. Recommended first milestone
 
-The first milestone should be implemented in [`tcballard/Pressroom`](https://github.com/tcballard/OmaPress) and stop at a command-line proof:
+The first milestone should be implemented in [`tcballard/OmaPress`](https://github.com/tcballard/OmaPress) and stop at a command-line proof:
 
 1. Initialise a Fixing Everything publication.
 2. Import the two existing daily editions and the weekly format.
@@ -451,7 +451,7 @@ That proves the central idea before any time is spent polishing an editor.
 
 ## 22. Reference points
 
-- [Pressroom repository](https://github.com/tcballard/OmaPress)
+- [OmaPress repository](https://github.com/tcballard/OmaPress)
 - [Omarchy repository and manual](https://github.com/omacom/omarchy)
 - [Omarchy Quattro release](https://github.com/omacom/omarchy/releases/tag/v4.0.0)
 - [DHH on the Qt and C++ Omarchy applications](https://x.com/dhh/status/2084701529957621890)
