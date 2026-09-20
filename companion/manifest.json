@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OmaPress \u2014 Substack companion",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Fill a blank Substack draft from your reviewed OmaPress outbox.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXjwHgGQw4GhHhgcb6yi28BJpLXu+VpegzKozbB6CVjPpAcX05Zqhwj6J4mVwShxSJ2DJoUGYYctJU6URdiI3dVTqyd+qYJi1zctjcAGFVqYEqYoDbWNINHv5VbcQzVZVoEE5S2Cl5jwW+hQL+d86TweeGnGiOGlapATmVFGA6IdrFYC5wGO6Gw9H8iIBBk5gSrJUrJtw1tXcigpwLggLjOimbD06bDJDepUqy2PcRQmOf3f7znaL9vfbTJjnQLmm8aSU3Kgh+CpsQHM4DNAY9mzKusPBjH7ThF3vPts8toeen63qYwzteFqQf8gpmYA3yPAuaKWFvnrqCu/bKQAkwIDAQAB",
   "permissions": [

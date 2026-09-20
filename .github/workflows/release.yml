@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Version tag (must match Cargo.toml, e.g. v0.1.0-rc.1)'
+        description: 'Version tag (must match Cargo.toml, e.g. v0.0.1)'
         required: true
 permissions:
   contents: read

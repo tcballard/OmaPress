@@ -1,5 +1,7 @@
 # OmaPress
 
+**v0.0.1 — early testing.** Development releases use 0.0.n until the app is ready for v0.1.0.
+
 <img alt="Built for Omarchy: App" height="20" src="https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg">
 
 Write locally. Publish a website and feeds. Take your words with you.
@@ -69,7 +71,7 @@ python3 tests/deployment.py
 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software build/desktop/omapress-desktop --smoke
 ```
 
-The first release candidate requires Tom's real Omarchy acceptance: keyboard and accessibility checks, RSS reader subscription, current X Article paste behaviour, XPS performance, and the real Fixing Everything import/domain launch. Sample fixtures are not the publication's real articles.
+Readiness for v0.1.0 requires Tom's real Omarchy acceptance: keyboard and accessibility checks, RSS reader subscription, current X Article paste behaviour, XPS performance, and the real Fixing Everything import/domain launch. Sample fixtures are not the publication's real articles.
 
 [Specification](docs/specification.md) · [Architecture](docs/architecture.md) · [Protocol](docs/protocol.md) · [Acceptance checklist](docs/acceptance.md) · [Security](docs/security.md)
 
