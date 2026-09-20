@@ -106,3 +106,14 @@ use OmaPress/omapress. See `renaming.md` for compatibility and worker upgrade st
 Earlier entries and checksum files remain historical, including their original paths.
 The packaging PR validates the renamed source through engine/native/Arch CI.
 Live XPS and provider acceptance remain pending; no OPR submission is made here.
+
+
+## Editor polish — 2026-09-20
+
+Based on main `48abcf88ff060ad36a816c08dc80976fdd528d95`; desktop input hashes are in `editor-polish-inputs.sha256`.
+
+Completed: mutually exclusive Markdown and Preview views retaining one editor instance; a quieter header, sentence-case actions, explicit Save/Details/More controls, themed selection, narrower navigation, and read-only title/summary/body scrolling together in Preview. Find returns to Markdown. Preview escapes title/summary before adding them to rendered HTML. No publication data or publishing adapters changed.
+
+Reproduced now on Ubuntu 24.04, Qt 6.4.2, software offscreen renderer, scale 1, default OmaPress fallback palette: CMake Release build; actual-app captures at 1440×930 for both modes and 900×930 for Preview; existing `--dialogs-smoke`; `git diff --check`, all exit 0. Captures use an isolated copy of the repository's sanitised fixing-everything fixture, no connected accounts. Screenshot options `--screenshot-preview` and `--screenshot-compact` only apply with `--screenshot PATH`. Images are actual Ubuntu renders of project-owned UI/sample content, supplied for visual review, not Omarchy acceptance.
+
+Known: existing undefined-to-bool warnings from unopened connection dialogs remain, also reproduced before this change. No new layout binding-loop warnings in the final capture. Live Hyprland/Wayland, keyboard/IME, real provider accounts and XPS acceptance not run. CI and Arch packaging results from earlier commits are historical and do not establish verification of this change. The pinned Arch recipe still references the preceding package source; a new package source pin is needed before distributing this UI in that package.

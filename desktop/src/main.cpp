@@ -37,6 +37,8 @@ int main(int argc,char **argv){
         QTimer::singleShot(1400,&app,[root,&app]{auto dialog=root->findChild<QObject*>("queueDialog");auto intake=root->findChild<QObject*>("intakeDialog");auto gateway=root->findChild<QObject*>("gatewayConfigDialog");app.exit(gateway&&gateway->property("visible").toBool()&&dialog&&intake&&dialog->property("visible").toBool()&&intake->property("visible").toBool()?0:1);});
     }
     const int screenshotIndex=args.indexOf("--screenshot");
+    if(screenshotIndex>=0 && args.contains("--screenshot-preview")) engine.rootObjects().first()->setProperty("showPreview", true);
+    if(screenshotIndex>=0 && args.contains("--screenshot-compact")) engine.rootObjects().first()->setProperty("width", 900);
     if(screenshotIndex>=0&&screenshotIndex+1<args.size())QTimer::singleShot(2000,&app,[&]{auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(window)window->grabWindow().save(args.at(screenshotIndex+1));app.quit();});
     return app.exec();
 }
