@@ -13,7 +13,7 @@
 #include <cstdio>
 #include <QSettings>
 int main(int argc,char **argv){
-    QGuiApplication app(argc,argv);app.setApplicationName("OmaPress");app.setOrganizationName("OmaPress");app.setApplicationVersion("0.0.1");app.setDesktopFileName("omapress");
+    QGuiApplication app(argc,argv);app.setApplicationName("OmaPress");app.setOrganizationName("OmaPress");app.setApplicationVersion("0.0.2");app.setDesktopFileName("omapress");
     QSettings settings;
     if (!settings.value("migration/pressroomImported", false).toBool()) {
         QSettings legacy("Pressroom", "Pressroom");
