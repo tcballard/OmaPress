@@ -1,4 +1,5 @@
 #include "Bridge.h"
+#include "WindowAppearance.h"
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -28,6 +29,7 @@ int main(int argc,char **argv){
     QQmlApplicationEngine engine;engine.rootContext()->setContextProperty("backend",&bridge);
     QObject::connect(&engine,&QQmlApplicationEngine::objectCreationFailed,&app,[]{QCoreApplication::exit(1);},Qt::QueuedConnection);
     engine.load(QUrl("qrc:/qml/Main.qml"));if(engine.rootObjects().isEmpty())return 1;
+    keepWritingSurfaceOpaque(qobject_cast<QQuickWindow *>(engine.rootObjects().first()));
     if(args.contains("--smoke"))QTimer::singleShot(1500,&app,&QCoreApplication::quit);
     if(args.contains("--dialogs-smoke")) {
         auto root=engine.rootObjects().first();

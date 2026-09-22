@@ -1,4 +1,6 @@
 #include "Bridge.h"
+#include "WindowAppearance.h"
+#include <QQmlExpression>
 #include <QGuiApplication>
 #include <QTemporaryDir>
 #include <QDir>
@@ -77,11 +79,50 @@ int main(int argc, char **argv) {
     until([&]{return content && content->x() >= 16 && toolbar->height() >= 68;});
     require(window->color() == QColor("#f5f6f8"), "light window colour");
     require(window->property("border").value<QColor>().isValid(), "typed foreground channels");
+    QQmlExpression fixture(engine.rootContext(), window, R"(
+        publication = {config: {name: "Fixing Everything", series: {}}, articles: []};
+        articlePath = "review.md";
+        meta = {title: "", summary: "", series: ""};
+    )");
+    fixture.evaluate();
+    require(!fixture.hasError(), "load editor fixture");
+    auto *search = window->findChild<QQuickItem *>("articleSearch");
+    auto *add = window->findChild<QQuickItem *>("newArticleButton");
+    auto *title = window->findChild<QQuickItem *>("articleTitle");
+    auto *summary = window->findChild<QQuickItem *>("articleSummary");
+    require(search && add && title && summary, "editor controls");
     for (int width : {900,1440}) {
         window->setWidth(width); QCoreApplication::processEvents();
-        require(content->x()+content->width() <= toolbar->width()-16, "right corner inset");
+        until([&]{return search->height() == 36 && add->height() == 36;});
+        require(content->x() >= 24 && content->y() >= 18, "explicit Material corner insets");
+        require(content->x()+content->width() <= toolbar->width()-24, "right corner inset");
+        require(search->x()+search->width()+8 <= add->x(), "search and add do not overlap");
+        require(title->x() == summary->x() && title->width() == summary->width(), "editor alignment");
+        require(window->color().alpha() == 255, "opaque Qt surface");
     }
     writePalette(palette, dark);
     until([&]{return window->color() == QColor("#181c19");});
+    const auto bin = temp.path()+"/bin";
+    require(QDir().mkpath(bin), "fake compositor directory");
+    const auto log = temp.path()+"/hyprctl.log";
+    QFile stub(bin+"/hyprctl");
+    require(stub.open(QIODevice::WriteOnly), "fake compositor executable");
+    stub.write("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$OMAPRESS_TEST_HYPR_LOG\"\n");
+    stub.close();
+    require(stub.setPermissions(QFile::ReadOwner|QFile::WriteOwner|QFile::ExeOwner), "executable permissions");
+    qputenv("PATH", bin.toUtf8()+":"+qgetenv("PATH"));
+    qputenv("OMAPRESS_TEST_HYPR_LOG", log.toUtf8());
+    qputenv("HYPRLAND_INSTANCE_SIGNATURE", "test");
+    qputenv("OMAPRESS_KEEP_COMPOSITOR_OPACITY", "1");
+    keepWritingSurfaceOpaque(window);
+    require(window->findChildren<QProcess *>().isEmpty(), "opacity opt-out");
+    qunsetenv("OMAPRESS_KEEP_COMPOSITOR_OPACITY");
+    keepWritingSurfaceOpaque(window);
+    until([&]{return QFile::exists(log) && window->findChild<QProcess *>()->state() == QProcess::NotRunning;});
+    QFile recorded(log); require(recorded.open(QIODevice::ReadOnly), "recorded compositor request");
+    const auto command = recorded.readAll();
+    require(command.startsWith("eval\n") && command.contains("^(omapress|OmaPress)$") &&
+            command.contains("1 override 1 override 1 override"), "scoped compositor opacity rule");
+    until([&]{return window->findChild<QProcess *>()->state() == QProcess::NotRunning;});
     qInfo("PASS: legacy, Quattro, Familiar, malformed palette, atomic replacement, live colours and toolbar insets");
 }
