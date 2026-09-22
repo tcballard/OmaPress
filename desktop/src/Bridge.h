@@ -1,5 +1,6 @@
 #pragma once
 #include <QObject>
+#include <QColor>
 #include <QUrl>
 #include <QVariantMap>
 #include <QQueue>
@@ -11,9 +12,9 @@ class Bridge final : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString publicationPath READ publicationPath WRITE setPublicationPath NOTIFY publicationPathChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
-    Q_PROPERTY(QString accent READ accent NOTIFY themeChanged)
-    Q_PROPERTY(QString background READ background NOTIFY themeChanged)
-    Q_PROPERTY(QString foreground READ foreground NOTIFY themeChanged)
+    Q_PROPERTY(QColor accent READ accent NOTIFY themeChanged)
+    Q_PROPERTY(QColor background READ background NOTIFY themeChanged)
+    Q_PROPERTY(QColor foreground READ foreground NOTIFY themeChanged)
     Q_PROPERTY(QString previewUrl READ previewUrl NOTIFY previewChanged)
 public:
     explicit Bridge(QObject *parent=nullptr);
@@ -21,9 +22,9 @@ public:
     QString publicationPath() const { return m_path; }
     void setPublicationPath(const QString &path);
     bool busy() const { return m_active || !m_queue.isEmpty(); }
-    QString accent() const { return m_accent; }
-    QString background() const { return m_background; }
-    QString foreground() const { return m_foreground; }
+    QColor accent() const { return m_accent; }
+    QColor background() const { return m_background; }
+    QColor foreground() const { return m_foreground; }
     QString previewUrl() const { return m_previewUrl; }
     Q_INVOKABLE void request(const QString &command, const QVariantMap &args={}, const QString &tag={});
     Q_INVOKABLE QVariantMap workerSettings() const;
@@ -53,7 +54,8 @@ private:
     void next();
     void finish();
     void loadTheme();
-    QString m_path,m_accent="#a7c58b",m_background="#181c19",m_foreground="#edf0e8",m_previewUrl;
+    QString m_path,m_previewUrl;
+    QColor m_accent{"#a7c58b"},m_background{"#181c19"},m_foreground{"#edf0e8"};
     quint64 m_generation=0;
     QQueue<Job> m_queue;
     Job m_current;

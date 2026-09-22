@@ -52,7 +52,7 @@ ApplicationWindow {
         else backend.request(command,args,tag)
     }
     function showQueue() { var settings=backend.workerSettings();workerHost.text=settings.host||"";workerPath.text=settings.path||"";queueDialog.open(); queueRequest("queue-list",{},"queue-list") }
-    readonly property color surface: Qt.lighter(backend.background, 1.22)
+    readonly property color surface: Material.theme === Material.Light ? Qt.darker(backend.background, 1.04) : Qt.lighter(backend.background, 1.22)
     readonly property color border: Qt.rgba(backend.foreground.r, backend.foreground.g, backend.foreground.b, 0.10)
 
     component WorkspaceButton: Button {
@@ -168,12 +168,13 @@ ApplicationWindow {
     }
 
     header: ToolBar {
+        objectName: "workspaceToolbar"
         padding: 16
         background: Rectangle { color: backend.background
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: win.border }
         }
-        RowLayout {
-            anchors.fill: parent; spacing: 10
+        contentItem: RowLayout {
+            spacing: 10
             Label { text:"OmaPress";font.pixelSize:21;font.bold:true;Layout.rightMargin:14 }
             Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.55 }
             BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
@@ -195,7 +196,7 @@ ApplicationWindow {
         RowLayout {
             Layout.fillWidth:true;Layout.fillHeight:true;spacing:0
             Pane {
-                Layout.preferredWidth:win.width>=1100?190:150;Layout.fillHeight:true;padding:14
+                Layout.preferredWidth:win.width>=1100?190:150;Layout.fillHeight:true;padding:14;bottomPadding:24
                 background: Rectangle { color: win.surface }
                 ColumnLayout { anchors.fill:parent;spacing:8
                     Label { text:"PUBLICATION";font.pixelSize:11;font.letterSpacing:1.5;opacity:.5;Layout.topMargin:10;Layout.bottomMargin:12 }
