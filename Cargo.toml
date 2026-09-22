@@ -3,7 +3,7 @@ members = ["crates/omapress-core", "crates/omapress-cli"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0-rc.1"
+version = "0.0.1"
 edition = "2024"
 license = "MIT"
 rust-version = "1.98"
