@@ -82,13 +82,42 @@ QVariantMap Bridge::colorsFromFile(const QString &path){
     auto matches=re.globalMatch(text);while(matches.hasNext()){auto m=matches.next();if(QColor(m.captured(2)).isValid())values[m.captured(1)]=m.captured(2);}return values;
 }
 void Bridge::loadTheme(){
-    const auto current=QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)+"/omarchy/current";const auto theme=current+"/theme/colors.toml";const auto colors=colorsFromFile(theme);
-    m_accent=colors.value("accent","#a7c58b").toString();m_background=colors.value("background","#181c19").toString();m_foreground=colors.value("foreground","#edf0e8").toString();
-    const auto watched=m_themeWatcher.files()+m_themeWatcher.directories();if(!watched.isEmpty())m_themeWatcher.removePaths(watched);
-    for(const auto &p:QStringList{current,current+"/theme",theme}) {
-        if(QFile::exists(p)) m_themeWatcher.addPath(p);
+    // Quattro moved generated theme state out of ~/.config. Keep the legacy
+    // location for older installations; never mix colours from different themes.
+    auto stateRoot = qEnvironmentVariable("XDG_STATE_HOME");
+    if (!QDir::isAbsolutePath(stateRoot)) stateRoot = QDir::homePath()+"/.local/state";
+    QStringList roots{stateRoot, QDir::homePath()+"/.local/state",
+                      QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)};
+    roots.removeDuplicates();
+    QStringList paths;
+    QVariantMap colors;
+    bool selected = false;
+    for (const auto &root : roots) {
+        const auto current = root+"/omarchy/current";
+        const auto theme = current+"/theme/colors.toml";
+        // Watch ancestors too: theme switching removes and replaces directories,
+        // and the app may start before the first theme has been generated.
+        paths << root << root+"/omarchy" << current << current+"/theme" << theme;
+        if (!selected && QFileInfo::exists(current)) {
+            selected = true;
+            colors = colorsFromFile(theme);
+        }
     }
-    emit themeChanged();
+    // A missing or partially written file must not flash the fallback palette.
+    if (colors.contains("accent") && colors.contains("background") && colors.contains("foreground")) {
+        const QColor accent(colors.value("accent").toString());
+        const QColor background(colors.value("background").toString());
+        const QColor foreground(colors.value("foreground").toString());
+        if (accent != m_accent || background != m_background || foreground != m_foreground) {
+            m_accent = accent; m_background = background; m_foreground = foreground;
+            emit themeChanged();
+        }
+    }
+    const auto watched=m_themeWatcher.files()+m_themeWatcher.directories();
+    if(!watched.isEmpty())m_themeWatcher.removePaths(watched);
+    for(const auto &path : paths) {
+        if(QFileInfo::exists(path)) m_themeWatcher.addPath(path);
+    }
 }
 void Bridge::selectText(QObject *editor,int start,int end){QMetaObject::invokeMethod(editor,"select",Q_ARG(int,start),Q_ARG(int,end));}
 
