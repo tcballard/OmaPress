@@ -9,7 +9,7 @@ ApplicationWindow {
     width: 1440; height: 930; minimumWidth: 900; minimumHeight: 620
     visible: true
     title: (dirty ? "• " : "") + (meta.title || "OmaPress") + (publication.config ? " — " + publication.config.name : "")
-    color: backend.background
+    color: Qt.rgba(backend.background.r, backend.background.g, backend.background.b, 1)
     Material.theme: Qt.darker(backend.background, 1).r + Qt.darker(backend.background, 1).g + Qt.darker(backend.background, 1).b > 1.5 ? Material.Light : Material.Dark
     Material.accent: backend.accent
     Material.primary: backend.background
@@ -53,25 +53,43 @@ ApplicationWindow {
     }
     function showQueue() { var settings=backend.workerSettings();workerHost.text=settings.host||"";workerPath.text=settings.path||"";queueDialog.open(); queueRequest("queue-list",{},"queue-list") }
     readonly property color surface: Material.theme === Material.Light ? Qt.darker(backend.background, 1.04) : Qt.lighter(backend.background, 1.22)
+    readonly property color secondaryText: blend(backend.foreground, backend.background, 0.72)
+    readonly property color onAccent: luminance(backend.accent) > 0.179 ? "#000000" : "#ffffff"
+    readonly property int editorInset: win.width < 1100 ? 20 : 32
+    function blend(front, back, weight) {
+        return Qt.rgba(front.r * weight + back.r * (1-weight), front.g * weight + back.g * (1-weight), front.b * weight + back.b * (1-weight), 1)
+    }
+    function luminance(color) {
+        function linear(c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) }
+        return 0.2126 * linear(color.r) + 0.7152 * linear(color.g) + 0.0722 * linear(color.b)
+    }
+    palette.text: backend.foreground
+    palette.windowText: backend.foreground
+    palette.placeholderText: secondaryText
+    palette.highlight: backend.accent
+    palette.highlightedText: onAccent
     readonly property color border: Qt.rgba(backend.foreground.r, backend.foreground.g, backend.foreground.b, 0.10)
 
     component WorkspaceButton: Button {
         id: control
         font.capitalization: Font.MixedCase
         implicitHeight: 36
+        implicitWidth: Math.max(36, contentItem.implicitWidth + leftPadding + rightPadding)
+        topPadding: 8; bottomPadding: 8
+        leftInset: 0; rightInset: 0
         topInset: 0; bottomInset: 0
         leftPadding: 14; rightPadding: 14
         background: Rectangle {
             radius: 6
             color: control.highlighted ? backend.accent : control.down ? Qt.lighter(win.surface, 1.4) : control.hovered ? win.surface : "transparent"
-            border.width: control.flat || control.highlighted ? 0 : 1
-            border.color: win.border
+            border.width: control.visualFocus ? 2 : control.flat || control.highlighted ? 0 : 1
+            border.color: control.visualFocus ? backend.accent : win.border
             opacity: control.enabled ? 1 : 0.4
         }
         contentItem: Text {
             text: control.text; font: control.font
-            color: control.highlighted ? backend.background : backend.foreground
-            opacity: control.enabled ? 1 : 0.35
+            color: control.highlighted ? win.onAccent : backend.foreground
+            opacity: control.enabled ? 1 : 0.5
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
@@ -122,10 +140,10 @@ ApplicationWindow {
     onClosing: function(close) { if(dirty && !closingAllowed){close.accepted=false;pendingAction=function(){closingAllowed=true;win.close()};unsavedDialog.open()} }
     Timer { id: renderTimer; interval: 300; onTriggered: renderNow() }
     Timer { id: recoveryTimer; interval: 1000; onTriggered: { if(dirty)backend.request("recovery-document",docArgs(),"recover-save") } }
-    Shortcut { sequence: StandardKey.Save; enabled: hasArticle; onActivated: save() }
-    Shortcut { sequence: StandardKey.New; enabled: opened; onActivated: newArticle() }
-    Shortcut { sequence: StandardKey.Open; onActivated: guarded(function(){openFolder.open()}) }
-    Shortcut { sequence: StandardKey.Find; enabled: hasArticle; onActivated: {showPreview=false;findBar.visible=true;findField.forceActiveFocus()} }
+    Shortcut { sequences: [StandardKey.Save]; enabled: hasArticle; onActivated: save() }
+    Shortcut { sequences: [StandardKey.New]; enabled: opened; onActivated: newArticle() }
+    Shortcut { sequences: [StandardKey.Open]; onActivated: guarded(function(){openFolder.open()}) }
+    Shortcut { sequences: [StandardKey.Find]; enabled: hasArticle; onActivated: {showPreview=false;findBar.visible=true;findField.forceActiveFocus()} }
     Shortcut { sequence: "Ctrl+Shift+P"; enabled: opened; onActivated: requestPublish() }
     Shortcut { sequence: "Ctrl+Shift+V"; enabled: editor.activeFocus; onActivated: editor.paste() }
     Shortcut { sequence: "Ctrl+B"; enabled: editor.activeFocus; onActivated: insertMarkup("**","**") }
@@ -169,15 +187,17 @@ ApplicationWindow {
 
     header: ToolBar {
         objectName: "workspaceToolbar"
-        padding: 16
+        implicitHeight: 72
+        leftPadding: 24; rightPadding: 24
+        topPadding: 18; bottomPadding: 18
         background: Rectangle { color: backend.background
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: win.border }
         }
         contentItem: RowLayout {
             spacing: 10
-            Label { text:"OmaPress";font.pixelSize:21;font.bold:true;Layout.rightMargin:14 }
-            Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.55 }
-            BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
+            Label { text:"OmaPress";font.pixelSize:20;font.bold:true;Layout.rightMargin:8 }
+            Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;color:win.secondaryText }
+            BusyIndicator { visible:backend.busy;running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
             WorkspaceButton { text:"Queue";flat:true;enabled:opened&&!backend.busy;onClicked:showQueue() }
             WorkspaceButton { text:"Connections";flat:true;onClicked:connectionsDialog.open() }
             WorkspaceButton { text:"Add article";enabled:opened&&!backend.busy;onClicked:guarded(function(){intakeDialog.open()}) }
@@ -216,9 +236,11 @@ ApplicationWindow {
             Rectangle { Layout.fillHeight:true;implicitWidth:1;color:backend.foreground;opacity:.13 }
             ColumnLayout {
                 visible:opened;Layout.preferredWidth:win.width>=1100?260:210;Layout.maximumWidth:win.width>=1100?260:210;Layout.fillHeight:true;spacing:0
-                RowLayout { Layout.fillWidth:true;Layout.margins:12
-                    TextField { placeholderText:"Search articles…";Layout.fillWidth:true;onTextChanged:query=text;Accessible.name:"Search title, text, tags, series and date" }
-                    ToolButton {font.capitalization:Font.MixedCase; text:"+";Accessible.name:"New article";onClicked:newArticle() }
+                RowLayout { Layout.fillWidth:true;Layout.margins:12;spacing:8
+                    TextField { objectName:"articleSearch";placeholderText:"Search articles…";Layout.fillWidth:true;Layout.preferredHeight:36;leftPadding:10;rightPadding:10;topPadding:8;bottomPadding:8;placeholderTextColor:win.secondaryText;
+                        background:Rectangle { radius:6;color:backend.background;border.width:parent.activeFocus?2:1;border.color:parent.activeFocus?backend.accent:win.border }
+                        onTextChanged:query=text;Accessible.name:"Search title, text, tags, series and date" }
+                    WorkspaceButton { objectName:"newArticleButton";text:"+";Layout.preferredWidth:36;leftPadding:0;rightPadding:0;Accessible.name:"New article";ToolTip.visible:hovered;ToolTip.text:"New article";onClicked:newArticle() }
                 }
                 ListView {
                     id:articleList;Layout.fillWidth:true;Layout.fillHeight:true;clip:true;model:shownArticles;spacing:1
@@ -244,7 +266,7 @@ ApplicationWindow {
             Rectangle {visible:opened;Layout.fillHeight:true;implicitWidth:1;color:backend.foreground;opacity:.13}
             ColumnLayout {
                 visible:hasArticle;Layout.fillWidth:true;Layout.fillHeight:true;spacing:0
-                RowLayout {Layout.fillWidth:true;Layout.margins:20;spacing:8
+                RowLayout {Layout.fillWidth:true;Layout.margins:16;spacing:8
                     RowLayout { spacing:2
                         WorkspaceButton { objectName:"markdownTab";text:"Markdown";checkable:true;checked:!showPreview;highlighted:checked;onClicked:{showPreview=false;editor.forceActiveFocus()} }
                         WorkspaceButton { objectName:"previewTab";text:"Preview";checkable:true;checked:showPreview;highlighted:checked;onClicked:{showPreview=true;findBar.visible=false;renderNow()} }
@@ -262,8 +284,8 @@ ApplicationWindow {
                     }
                 }
                 Rectangle {
-                    Layout.fillWidth:true;Layout.leftMargin:40;Layout.rightMargin:40;Layout.bottomMargin:16
-                    Layout.preferredHeight:meta.header_image?Math.min(190,win.height*0.22):70
+                    Layout.fillWidth:true;Layout.leftMargin:win.editorInset;Layout.rightMargin:win.editorInset;Layout.bottomMargin:16
+                    Layout.preferredHeight:meta.header_image?Math.min(190,win.height*0.22):64
                     radius:8;color:bannerDrop.containsDrag?Qt.lighter(win.surface,1.4):win.surface
                     border.width:1;border.color:bannerDrop.containsDrag?backend.accent:win.border
                     Image {
@@ -273,9 +295,9 @@ ApplicationWindow {
                         Accessible.name:"Article banner"
                     }
                     Label {
-                        anchors.centerIn:parent;visible:!meta.header_image||bannerImage.status===Image.Error||bannerImage.status===Image.Null
+                        anchors.left:parent.left;anchors.leftMargin:16;anchors.right:bannerActions.left;anchors.rightMargin:12;anchors.verticalCenter:parent.verticalCenter;wrapMode:Text.Wrap;visible:!meta.header_image||bannerImage.status===Image.Error||bannerImage.status===Image.Null
                         text:meta.header_image?"Banner unavailable — replace the image":"Drop banner artwork here"
-                        color:backend.foreground;opacity:.6
+                        color:win.secondaryText
                     }
                     DropArea {
                         id:bannerDrop;anchors.fill:parent;enabled:!backend.busy
@@ -283,25 +305,26 @@ ApplicationWindow {
                         onDropped:function(drop){if(drop.hasUrls&&drop.urls.length===1){importBanner(drop.urls[0]);drop.acceptProposedAction()}}
                     }
                     Row {
-                        anchors.right:parent.right;anchors.bottom:parent.bottom;anchors.margins:8;spacing:6
+                        id:bannerActions
+                        anchors.right:parent.right;anchors.bottom:parent.bottom;anchors.margins:14;spacing:6
                         WorkspaceButton {text:meta.header_image?"Replace":"Add banner";enabled:!backend.busy;highlighted:true;onClicked:mediaImport.open()}
                         WorkspaceButton {text:"Remove";visible:!!meta.header_image;enabled:!backend.busy;onClicked:{setMeta("header_image",null);say("Banner removed from this article. Save to keep this change.")}
                             background:Rectangle {radius:6;color:backend.background;border.width:1;border.color:win.border}
                         }
                     }
                 }
-                TextField {visible:!showPreview;text:meta.title||"";placeholderText:meta.title?"":"Your editorial title";font.pixelSize:27;font.bold:true;Layout.fillWidth:true;Layout.leftMargin:40;Layout.rightMargin:40;background:Item{} onTextEdited:setMeta("title",text);Accessible.name:"Editorial title"}
-                TextField {visible:!showPreview;text:meta.summary||"";placeholderText:meta.summary?"":"A short summary for the site and feeds";Layout.fillWidth:true;Layout.leftMargin:40;Layout.rightMargin:40;background:Item{} onTextEdited:setMeta("summary",text);Accessible.name:"Article summary"}
-                RowLayout {visible:!showPreview;Layout.fillWidth:true;Layout.leftMargin:32;Layout.rightMargin:32
-                    ToolButton {font.capitalization:Font.MixedCase;text:"H2";Accessible.name:"Insert heading";onClicked:insertMarkup("\n## ","\n")}
-                    ToolButton {font.capitalization:Font.MixedCase;text:"B";font.bold:true;Accessible.name:"Bold";onClicked:insertMarkup("**","**")}
-                    ToolButton {font.capitalization:Font.MixedCase;text:"I";font.italic:true;Accessible.name:"Italic";onClicked:insertMarkup("*","*")}
-                    ToolButton {font.capitalization:Font.MixedCase;text:"Link";onClicked:insertMarkup("[","](https://)")}
-                    ToolButton {font.capitalization:Font.MixedCase;text:"List";onClicked:insertMarkup("\n- ","\n")}
-                    ToolButton {font.capitalization:Font.MixedCase;text:"Code";onClicked:insertMarkup("\n```\n","\n```\n")}
+                TextField {objectName:"articleTitle";color:backend.foreground;placeholderTextColor:win.secondaryText;leftPadding:0;rightPadding:0;topPadding:8;bottomPadding:8;Layout.preferredHeight:52;visible:!showPreview;text:meta.title||"";placeholderText:meta.title?"":"Your editorial title";font.pixelSize:27;font.bold:true;Layout.fillWidth:true;Layout.leftMargin:win.editorInset;Layout.rightMargin:win.editorInset;background:Item{} onTextEdited:setMeta("title",text);Accessible.name:"Editorial title"}
+                TextField {objectName:"articleSummary";color:backend.foreground;placeholderTextColor:win.secondaryText;leftPadding:0;rightPadding:0;topPadding:8;bottomPadding:8;Layout.preferredHeight:38;visible:!showPreview;text:meta.summary||"";placeholderText:meta.summary?"":"A short summary for the site and feeds";Layout.fillWidth:true;Layout.leftMargin:win.editorInset;Layout.rightMargin:win.editorInset;background:Item{} onTextEdited:setMeta("summary",text);Accessible.name:"Article summary"}
+                RowLayout {visible:!showPreview;Layout.fillWidth:true;Layout.leftMargin:win.editorInset;Layout.rightMargin:win.editorInset;Layout.topMargin:8;spacing:2
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"H2";Accessible.name:"Insert heading";onClicked:insertMarkup("\n## ","\n")}
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"B";font.bold:true;Accessible.name:"Bold";onClicked:insertMarkup("**","**")}
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"I";font.italic:true;Accessible.name:"Italic";onClicked:insertMarkup("*","*")}
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"Link";onClicked:insertMarkup("[","](https://)")}
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"List";onClicked:insertMarkup("\n- ","\n")}
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"Code";onClicked:insertMarkup("\n```\n","\n```\n")}
                     Item {Layout.fillWidth:true}
-                    ToolButton {font.capitalization:Font.MixedCase;text:"Undo";enabled:editor.canUndo;onClicked:editor.undo()}
-                    ToolButton {font.capitalization:Font.MixedCase;text:"Redo";enabled:editor.canRedo;onClicked:editor.redo()}
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"Undo";enabled:editor.canUndo;onClicked:editor.undo()}
+                    WorkspaceButton {flat:true;leftPadding:8;rightPadding:8;text:"Redo";enabled:editor.canRedo;onClicked:editor.redo()}
                 }
                 RowLayout {id:findBar;visible:false;Layout.fillWidth:true;Layout.margins:12
                     TextField {id:findField;placeholderText:"Find in article";Layout.fillWidth:true;onAccepted:findNext();Accessible.name:"Find in article"}
@@ -313,17 +336,17 @@ ApplicationWindow {
                     ScrollView {
                         anchors.fill:parent;visible:!showPreview;id:markdownView;objectName:"markdownView";clip:true
                         Flickable { clip:true; boundsBehavior:Flickable.StopAtBounds
-                        TextArea.flickable: TextArea {id:editor;textFormat:TextEdit.PlainText;wrapMode:TextEdit.Wrap;selectByMouse:true;font.family:"monospace";font.pixelSize:16;leftPadding:40;rightPadding:40;topPadding:24;bottomPadding:80;placeholderText:"Paste your article or start writing in Markdown…";onTextChanged:changed();Accessible.name:"Markdown article body";background:Item{}}
+                        TextArea.flickable: TextArea {id:editor;textFormat:TextEdit.PlainText;wrapMode:TextEdit.Wrap;selectByMouse:true;font.family:"monospace";font.pixelSize:16;color:backend.foreground;placeholderTextColor:win.secondaryText;leftPadding:win.editorInset;rightPadding:win.editorInset;topPadding:20;bottomPadding:80;placeholderText:"Paste your article or start writing in Markdown…";onTextChanged:changed();Accessible.name:"Markdown article body";background:Item{}}
                         }
                     }
                     ScrollView {
                         anchors.fill:parent;visible:showPreview;id:previewView;objectName:"previewView";clip:true
                         Flickable { clip:true; boundsBehavior:Flickable.StopAtBounds
-                        TextArea.flickable: TextArea {id:previewText;text:"<h1>"+escapeHtml(meta.title||"Untitled article")+"</h1><p>"+escapeHtml(meta.summary)+"</p><br>"+rendered;textFormat:TextEdit.RichText;readOnly:true;selectByMouse:true;wrapMode:TextEdit.Wrap;font.family:win.font.family;font.pixelSize:18;leftPadding:40;rightPadding:40;topPadding:24;bottomPadding:80;onLinkActivated:function(link){backend.openUrl(link)} Accessible.name:"Rendered article preview";background:Item{}}
+                        TextArea.flickable: TextArea {id:previewText;text:"<h1>"+escapeHtml(meta.title||"Untitled article")+"</h1><p>"+escapeHtml(meta.summary)+"</p><br>"+rendered;textFormat:TextEdit.RichText;readOnly:true;selectByMouse:true;wrapMode:TextEdit.Wrap;font.family:win.font.family;font.pixelSize:18;color:backend.foreground;placeholderTextColor:win.secondaryText;leftPadding:win.editorInset;rightPadding:win.editorInset;topPadding:20;bottomPadding:80;onLinkActivated:function(link){backend.openUrl(link)} Accessible.name:"Rendered article preview";background:Item{}}
                         }
                     }
                 }
-                Label {text:(editor.text.trim()?editor.text.trim().split(/\s+/).length:0)+" words · "+(showPreview?"Preview":"Markdown")+" · "+(meta.series||"");font.pixelSize:11;opacity:.5;Layout.margins:12}
+                Label {text:(editor.text.trim()?editor.text.trim().split(/\s+/).length:0)+" words · "+(showPreview?"Preview":"Markdown")+" · "+(meta.series||"");font.pixelSize:11;color:win.secondaryText;Layout.margins:16}
             }
             Item {visible:!hasArticle;Layout.fillWidth:true;Layout.fillHeight:true
                 ColumnLayout {anchors.centerIn:parent;width:Math.min(parent.width-64,480);spacing:18
