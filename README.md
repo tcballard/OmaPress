@@ -1,6 +1,6 @@
 # OmaPress
 
-**v0.0.1 — early testing.** Development releases use 0.0.n until the app is ready for v0.1.0.
+**v0.0.2 — early testing.** Development releases use 0.0.n until the app is ready for v0.1.0.
 
 <img alt="Built for Omarchy: App" height="20" src="https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg">
 

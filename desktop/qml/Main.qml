@@ -210,7 +210,7 @@ ApplicationWindow {
                     Label { text:opened&&publication.state&&publication.state.pending?"Deployment needs recheck":opened&&publication.state&&publication.state.deployments.length?"Last deployment verified":"Local publication";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.65;font.pixelSize:12 }
                     WorkspaceButton { text:"History";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:historyDialog.open() }
                     WorkspaceButton { text:"Settings";enabled:opened;flat:true;Layout.fillWidth:true;onClicked:guarded(function(){configEditor.text=publication.config_text;settingsDialog.open()}) }
-                    Label { text:"OmaPress 0.0.1";font.pixelSize:11;opacity:.4 }
+                    Label { text:"OmaPress 0.0.2";font.pixelSize:11;opacity:.4 }
                 }
             }
             Rectangle { Layout.fillHeight:true;implicitWidth:1;color:backend.foreground;opacity:.13 }

@@ -1,19 +1,16 @@
-# OmaPress v0.0.1
+# OmaPress v0.0.2
 
-An early build for getting articles out of a ChatGPT thread and into a publication you own.
+Your theme, throughout your writing workspace.
 
-Paste or write Markdown, switch to a full-width preview, and add banner artwork above the title. Keep articles locally, generate a website and feeds, and review each publishing destination before sending.
+OmaPress now reads the active Omarchy Quattro palette, bringing Familiar’s light background, dark text and blue accents into the app. The toolbar also gives the title and Publish button enough room inside rounded window corners.
 
-Included in this build:
-- Native Qt desktop app and Rust CLI.
-- Markdown/Preview toggle, banner import and drag-and-drop, Replace and Remove.
-- Static website, RSS, Atom and JSON feeds, with guarded GitHub Pages publishing.
-- Experimental X API publishing and separate browser exports.
-- Substack browser companion, plus an optional unofficial Gateway integration for drafts and scheduling.
-- Local or SSH worker queues for Website/X. Publishing while the laptop is closed requires an always-on worker.
+- Follow the current Quattro theme, with support for the older theme location.
+- Update colours when you switch themes and keep the last complete palette while theme files are replaced.
+- Improve sidebar contrast for light themes and add space beneath the footer.
+- Add automated checks for Familiar colours, live theme changes and toolbar spacing.
 
-This is the first 0.0.n testing release. We will iterate through 0.0.2, 0.0.3 and onward; v0.1.0 is reserved for a build ready for normal use. XPS/Wayland acceptance, native drag-and-drop, accessibility and real provider workflows are still pending. Browser-based Substack publishing requires its final audience/email review in Substack.
+This is an early testing release. The original app launch was tested on Tom’s XPS; the corrected appearance still needs confirmation on that device. Automated checks cover the native build, theme behaviour, application launch and clipboard. Real provider publishing workflows remain separate acceptance work.
 
-Use the Linux x86_64 tarball and its SHA256SUMS file. Extract it and run `sh install.sh "$HOME/.local"`. Runtime dependencies on Omarchy: qt6-base, qt6-declarative, qt6-wayland, git, github-cli, curl, libsecret, xdg-utils and optionally python for companion registration. Launch `$HOME/.local/bin/omapress-desktop`.
+Download the Linux x86_64 bundle and SHA256SUMS, verify the checksum, then run `sh install.sh "$HOME/.local"` from the extracted directory. Close OmaPress before updating. Existing publications and settings are preserved. To roll back, reinstall the v0.0.1 bundle; this update makes no publication data-format changes.
 
-The checked-in Arch recipe still pins an older development snapshot; it is not the v0.0.1 release package. Use this release's tarball for the latest interface. No OPR submission or live Omarchy acceptance is claimed.
+The bundled binaries require Qt 6 and the dependencies listed in the README. This GitHub release does not itself update the Omarchy package repository.

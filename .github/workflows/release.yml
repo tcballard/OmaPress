@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Version tag (must match Cargo.toml, e.g. v0.0.1)'
+        description: 'Version tag (must match Cargo.toml, e.g. v0.0.2)'
         required: true
 permissions:
   contents: read
@@ -26,6 +26,7 @@ jobs:
       - run: cargo fmt --all --check && cargo clippy --workspace --all-targets --locked -- -D warnings && cargo test --workspace --locked && cargo build --release --locked
       - run: OMAPRESS_CLI="$PWD/target/release/omapress" python3 tests/deployment.py && OMAPRESS_CLI="$PWD/target/release/omapress" python3 tests/preview_http.py
       - run: cmake -S desktop -B build/desktop -DCMAKE_BUILD_TYPE=Release && cmake --build build/desktop --parallel 2
+      - run: ctest --test-dir build/desktop --output-on-failure
       - run: QT_QUICK_BACKEND=software OMAPRESS_CLI="$PWD/target/release/omapress" xvfb-run -a build/desktop/omapress-desktop --smoke && QT_QUICK_BACKEND=software xvfb-run -a build/desktop/omapress-desktop --clipboard-smoke
       - run: python3 scripts/package.py
       - name: Publish versioned release candidate
