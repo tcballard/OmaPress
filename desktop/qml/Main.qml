@@ -83,7 +83,7 @@ ApplicationWindow {
             radius: 6
             color: control.highlighted ? backend.accent : control.down ? Qt.lighter(win.surface, 1.4) : control.hovered ? win.surface : "transparent"
             border.width: control.visualFocus ? 2 : control.flat || control.highlighted ? 0 : 1
-            border.color: control.visualFocus ? backend.accent : win.border
+            border.color: control.visualFocus ? (control.highlighted ? win.onAccent : backend.accent) : win.border
             opacity: control.enabled ? 1 : 0.4
         }
         contentItem: Text {

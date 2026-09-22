@@ -11,8 +11,13 @@ Qt renders an opaque window. On Lua-based Hyprland, the app asynchronously regis
 ## Reproduced now
 
 - Loaded the actual changed QML with PySide6 / Qt 6.11.2, software offscreen rendering, using a fixture backend. Captured and visually inspected Familiar light and dark at 900 and 1440px. Header: 72px, left/right inset 24px, vertical inset 18px. Search and add controls: 36px, 8px gap.
+- Minimum 900×620 fixture: geometry assertions, title editing/dirty state and Markdown/Preview switching passed in light and dark.
 - `git diff --check`: passed.
 - Native regression coverage extends the existing theme test to an opened editor, control geometry, window alpha and a fake `hyprctl` executable verifying the scoped request and opt-out. Run through the normal native CI job.
+
+## Historical CI evidence
+
+Commit `b6f8fc67c53be76bbc4104c238fd453ae2aa3730`, run `35788196546`: native C++ build, extended CTest suite, app/dialog/clipboard smoke, bundle installation and engine job all passed. A subsequent contrast-only change makes the keyboard focus outline visible on highlighted buttons; consult the final commit checks for its own CI result.
 
 ## Not run locally
 
