@@ -16,13 +16,13 @@ Dialog {
     property string timezone: "Europe/London"
     property var newsletters: []
     property var review: ({})
-    property var result: ({})
+    property var campaignResult: ({})
     property var connection: ({})
     property string notice: "Connect your newsletter service, then choose a newsletter."
     property string testId: ""
     property int generation: 0
     readonly property string newsletterId: newsletters.length && selection.currentIndex >= 0 ? newsletters[selection.currentIndex].id : ""
-    function resetReview() { generation++; review={};result={};reviewed.checked=false;testId="" }
+    function resetReview() { generation++; review={};campaignResult={};reviewed.checked=false;testId="" }
     function request(command,args,tag) { backend.request(command,args,"newsletter-ui:"+generation+":"+tag) }
     function args() { return {article:article,expected_source_hash:reviewedSourceHash,newsletter_id:newsletterId} }
     function refresh() {request("newsletter-list",{},"list")}
@@ -43,8 +43,8 @@ Dialog {
                 dialog.connection=v;serviceUrl.text=v.service_url||serviceUrl.text;dialog.newsletters=v.newsletters||[];
                 dialog.notice=v.transport==="capture"?"Capture mode: email stays on the server. No messages are sent.":"Connected to your newsletter service."
             } else if(action==="create") {dialog.notice="Newsletter created.";dialog.refresh()}
-            else if(action==="review") {dialog.review=v;dialog.result={};reviewed.checked=false;dialog.notice="Review the saved email and subscriber count before sending."}
-            else if(action==="status") {dialog.result=v;dialog.review={};reviewed.checked=false;dialog.notice="Campaign status refreshed. Complete means processing finished; check delivery counts."}
+            else if(action==="review") {dialog.review=v;dialog.campaignResult={};reviewed.checked=false;dialog.notice="Review the saved email and subscriber count before sending."}
+            else if(action==="status") {dialog.campaignResult=v;dialog.review={};reviewed.checked=false;dialog.notice="Campaign status refreshed. Complete means processing finished; check delivery counts."}
             else if(action==="test") {dialog.notice="Test queued for "+v.recipient+(v.transport==="capture"?" (capture mode; no email sent)":"");dialog.testId=""}
             else if(action==="contacts") {csvText.text=v.csv;dialog.notice=v.active+" active subscribers; "+v.total+" total records. CSV ready to copy."}
             else if(action==="import") {dialog.notice=v.added+" subscriptions added. Existing opt-outs preserved.";consent.checked=false}
@@ -80,7 +80,7 @@ Dialog {
                         Button {text:"Review campaign";enabled:!!dialog.article&&!!dialog.newsletterId&&!backend.busy;onClicked:dialog.request("newsletter-review",dialog.args(),"review")}
                         Button {text:"Refresh status";enabled:!!dialog.article&&!!dialog.newsletterId&&!backend.busy;onClicked:dialog.request("newsletter-refresh",dialog.args(),"status")}
                     }
-                    Label {visible:!!dialog.result.campaign;text:dialog.result.campaign?"Status: "+dialog.result.campaign.status+"\n"+JSON.stringify(dialog.result.counts||{}):"";wrapMode:Text.Wrap;Layout.fillWidth:true}
+                    Label {visible:!!dialog.campaignResult.campaign;text:dialog.campaignResult.campaign?"Status: "+dialog.campaignResult.campaign.status+"\n"+JSON.stringify(dialog.campaignResult.counts||{}):"";wrapMode:Text.Wrap;Layout.fillWidth:true}
                     Label {visible:!!dialog.review.campaign;text:dialog.review.campaign?dialog.review.campaign.subject+"\n"+dialog.review.newsletter.name+" · "+dialog.review.audience_count+" active subscribers\nFrom: "+dialog.review.newsletter.from_email+"\nReply to: "+dialog.review.newsletter.reply_to:"";wrapMode:Text.Wrap;Layout.fillWidth:true;font.bold:true}
                     TextArea {visible:!!dialog.review.html;text:dialog.review.html||"";textFormat:TextEdit.RichText;readOnly:true;wrapMode:TextEdit.Wrap;Layout.fillWidth:true;Layout.preferredHeight:visible?260:0;Accessible.name:"Newsletter preview"}
                     Label {visible:!!dialog.review.html;text:"Preview uses the desktop renderer. Send yourself a test to check the final email layout.";wrapMode:Text.Wrap;Layout.fillWidth:true;opacity:.7}

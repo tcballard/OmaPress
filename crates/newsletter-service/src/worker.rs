@@ -116,6 +116,24 @@ pub async fn apply_event(app: &App, event_id: &str, event: &Value) -> Result<()>
     if inserted == 0 {
         return Ok(());
     }
+    // Match cancellation/subscription lock order before touching deliveries.
+    let owner = sqlx::query("SELECT newsletter_id,campaign_id FROM deliveries WHERE id=$1")
+        .bind(id)
+        .fetch_optional(&mut *tx)
+        .await?;
+    let Some(owner) = owner else {
+        return Ok(());
+    };
+    sqlx::query("SELECT id FROM newsletters WHERE id=$1 FOR UPDATE")
+        .bind(owner.get::<Uuid, _>("newsletter_id"))
+        .execute(&mut *tx)
+        .await?;
+    if let Some(campaign) = owner.get::<Option<Uuid>, _>("campaign_id") {
+        sqlx::query("SELECT id FROM campaigns WHERE id=$1 FOR UPDATE")
+            .bind(campaign)
+            .execute(&mut *tx)
+            .await?;
+    }
     let Some(row) = sqlx::query(
         "SELECT recipient,campaign_id,state,provider_id FROM deliveries WHERE id=$1 FOR UPDATE",
     )

@@ -31,6 +31,10 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
       - run: cargo build --workspace --locked
+      - name: Newsletter native RPC and capture delivery integration
+        run: node tests/newsletters.mjs
+        env:
+          NEWSLETTER_E2E_DISPOSABLE_DATABASE: "true"
       - run: python3 tests/distribution.py
       - run: python3 tests/scheduling.py
       - run: python3 tests/substack_gateway.py
