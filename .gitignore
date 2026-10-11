@@ -3,3 +3,4 @@
 /dist/
 *.user
 __pycache__/
+/deploy/newsletter/.env

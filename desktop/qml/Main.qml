@@ -76,7 +76,7 @@ ApplicationWindow {
             elide: Text.ElideRight
         }
     }
-    function smokeQueue() { intakeDialog.open(); queueDialog.open(); gatewayConfigDialog.open() }
+    function smokeQueue() { newsletterDialog.open(); intakeDialog.open(); queueDialog.open(); gatewayConfigDialog.open() }
 
     readonly property bool opened: !!publication.config
     readonly property bool hasArticle: articlePath !== ""
@@ -133,7 +133,7 @@ ApplicationWindow {
 
     Connections {
         target: backend
-        function onFailed(tag,error) { if(tag==="gateway-connect"){gatewaySession.text="";gatewayConnectSession.text=""}say(error,true) }
+        function onFailed(tag,error) { if(tag.indexOf("newsletter-ui:")===0)return; if(tag==="gateway-connect"){gatewaySession.text="";gatewayConnectSession.text=""}say(error,true) }
         function onArrayResult(tag,value) { if(tag==="repos")repoChoices=value }
         function onResult(tag,v) {
             if(tag==="open"||tag==="init") { publication=v;sourceHash=v.source_hash;articlePath="";meta={};editor.text="";dirty=false;if((v.articles||[]).length)backend.request("read",{article:v.articles[0].path},"read") }
@@ -179,6 +179,7 @@ ApplicationWindow {
             Label { text:opened?publication.config.name:"Your words. Your publication.";elide:Text.ElideRight;Layout.fillWidth:true;opacity:.55 }
             BusyIndicator { running:backend.busy;implicitWidth:24;implicitHeight:24;Accessible.name:"Operation in progress" }
             WorkspaceButton { text:"Queue";flat:true;enabled:opened&&!backend.busy;onClicked:showQueue() }
+            WorkspaceButton { text:"Newsletters";flat:true;enabled:opened&&!backend.busy;onClicked:guarded(function(){newsletterDialog.open()}) }
             WorkspaceButton { text:"Connections";flat:true;onClicked:connectionsDialog.open() }
             WorkspaceButton { text:"Add article";enabled:opened&&!backend.busy;onClicked:guarded(function(){intakeDialog.open()}) }
             WorkspaceButton { text:"Publish…";highlighted:true;enabled:opened&&!backend.busy;onClicked:requestPublish() }
@@ -406,6 +407,8 @@ ApplicationWindow {
             RowLayout {Button{text:"Copy article";highlighted:true;enabled:!backend.busy;onClicked:{backend.copyArticle(exportData.html,exportData.text);say("Article copied as HTML and plain text.")}}Button{text:"Copy caption";enabled:!backend.busy;onClicked:{backend.copyText(exportData.caption);say("Caption copied.")}}}
         }
     }
+
+    NewsletterDialog {id:newsletterDialog;article:win.articlePath;reviewedSourceHash:win.sourceHash;timezone:publication.config?publication.config.timezone:"Europe/London"}
 
     Dialog {id:connectionsDialog;objectName:"connectionsDialog";title:"Connections";modal:true;anchors.centerIn:parent;width:600;standardButtons:Dialog.Close
         ColumnLayout {anchors.fill:parent;spacing:12

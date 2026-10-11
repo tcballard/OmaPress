@@ -17,3 +17,5 @@ pub mod substack;
 pub mod schedule;
 
 pub mod substack_gateway;
+
+pub mod newsletter;

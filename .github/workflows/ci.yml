@@ -11,6 +11,17 @@ concurrency:
 jobs:
   engine:
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: newsletter-test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:newsletter-test@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.98.0
@@ -20,6 +31,10 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
       - run: cargo build --workspace --locked
+      - name: Newsletter native RPC and capture delivery integration
+        run: node tests/newsletters.mjs
+        env:
+          NEWSLETTER_E2E_DISPOSABLE_DATABASE: "true"
       - run: python3 tests/distribution.py
       - run: python3 tests/scheduling.py
       - run: python3 tests/substack_gateway.py
