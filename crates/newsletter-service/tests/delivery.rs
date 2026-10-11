@@ -209,6 +209,42 @@ async fn consent_freeze_and_delivery(pool: PgPool) {
         !worker::tick(&app).await.unwrap(),
         "Finished messages cannot be resent"
     );
+    // If every remaining reader opts out, the worker still reconciles the campaign.
+    let c = campaign(&router, &n, Uuid::new_v4()).await;
+    let id = c["id"].as_str().unwrap();
+    let r = review(&router, id).await;
+    let payload = json!({"revision":c["revision"],"audience_hash":r["audience_hash"],"scheduled_at":(chrono::Utc::now()+chrono::Duration::hours(1)).to_rfc3339_opts(chrono::SecondsFormat::Secs,true)});
+    assert_eq!(
+        req(
+            &router,
+            "POST",
+            &format!("/v1/campaigns/{id}/schedule"),
+            payload
+        )
+        .await
+        .0,
+        200
+    );
+    let link: String =
+        sqlx::query_scalar("SELECT unsubscribe_url FROM deliveries WHERE campaign_id=$1")
+            .bind(Uuid::parse_str(id).unwrap())
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert_eq!(
+        form(
+            &router,
+            "POST",
+            link.strip_prefix(&app.config.public_url).unwrap(),
+            ""
+        )
+        .await,
+        200
+    );
+    worker::tick(&app).await.unwrap();
+    let (_, status) = req(&router, "GET", &format!("/v1/campaigns/{id}"), Value::Null).await;
+    assert_eq!(status["campaign"]["status"], "complete");
+    assert_eq!(status["counts"]["suppressed"], 1);
 }
 
 #[sqlx::test(migrations = "./migrations")]

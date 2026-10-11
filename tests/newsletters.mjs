@@ -44,7 +44,7 @@ try {
     const first=rpc('newsletter-schedule',send);const second=rpc('newsletter-schedule',send);
     assert.equal(first.campaign.scheduled_at,second.campaign.scheduled_at);
     let status;
-    for(let i=0;i<100;i++){status=rpc('newsletter-refresh',args);if(status.counts.captured===1)break;await delay(100);}
+    for(let i=0;i<100;i++){status=rpc('newsletter-refresh',args);if(status.counts.captured===1&&status.campaign.status==='complete')break;await delay(100);}
     assert.equal(status.counts.captured,1);assert.equal(status.campaign.status,'complete');
     const saved=JSON.parse(readFileSync(credentials,'utf8'));assert.equal(saved.api_token,token);
     console.log('Newsletter end-to-end: connection, subscribers, preview, idempotent test/send and captured delivery passed.');

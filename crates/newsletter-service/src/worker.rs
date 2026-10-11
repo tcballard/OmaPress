@@ -199,6 +199,10 @@ pub async fn apply_event(app: &App, event_id: &str, event: &Value) -> Result<()>
     tx.commit().await?;
     Ok(())
 }
+async fn finish_campaigns(app: &App) -> Result<()> {
+    sqlx::query("UPDATE campaigns SET status='complete' WHERE status IN ('scheduled','sending') AND NOT EXISTS(SELECT 1 FROM deliveries WHERE campaign_id=campaigns.id AND kind='campaign' AND state IN ('pending','dispatching'))").execute(&app.db).await?;
+    Ok(())
+}
 /// One pass, used by the owned worker and integration tests. A transaction-scoped
 /// advisory lock serializes workers across replicas and caps the aggregate rate.
 pub async fn tick(app: &App) -> Result<bool> {
@@ -211,6 +215,7 @@ pub async fn tick(app: &App) -> Result<bool> {
     }
     poll_events(app).await?; // Fail closed if feedback processing is unavailable.
     sqlx::query("UPDATE deliveries SET state='unknown',last_error='Worker interrupted after dispatch claim; awaiting provider evidence' WHERE state='dispatching' AND started_at<now()-interval '2 minutes'").execute(&app.db).await?;
+    finish_campaigns(app).await?;
     if !app.config.sending_enabled {
         return Ok(false);
     }
@@ -311,7 +316,7 @@ pub async fn tick(app: &App) -> Result<bool> {
             sqlx::query("UPDATE deliveries SET state='unknown',last_error='Provider result uncertain; do not resend without reconciliation' WHERE id=$1 AND state='dispatching'").bind(id).execute(&app.db).await?;
         }
     }
-    sqlx::query("UPDATE campaigns SET status='complete' WHERE status IN ('scheduled','sending') AND NOT EXISTS(SELECT 1 FROM deliveries WHERE campaign_id=campaigns.id AND kind='campaign' AND state IN ('pending','dispatching'))").execute(&app.db).await?;
+    finish_campaigns(app).await?;
     tokio::time::sleep(Duration::from_millis(app.config.send_interval_ms)).await;
     lease.commit().await?;
     Ok(true)
