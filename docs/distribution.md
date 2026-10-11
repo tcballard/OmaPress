@@ -91,3 +91,10 @@ The frozen contract in `tests/contracts/x-article-schema.json` comes from
 2026-09-19. Its exact lowercase style/entity enums and prohibited extra fields are
 checked in the end-to-end provider-double test. This verifies request contracts,
 not rendering fidelity or account entitlement on a live X account.
+
+## Self-hosted newsletters (development)
+
+The **Newsletters** panel provides an independent reviewed email workflow using the
+[newsletter service](newsletters.md). It does not join the website/X/Substack batch
+publication action. Its server owns subscriber consent, recipient snapshots, delivery
+and schedules; the local engine retains campaign identity and uncertainty receipts.

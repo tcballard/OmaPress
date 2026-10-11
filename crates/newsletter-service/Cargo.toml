@@ -1,0 +1,27 @@
+[package]
+name = "newsletter-service"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json", "migrate", "macros"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+sha2 = "0.10"
+hmac = "0.12"
+hex = "0.4"
+url = "2"
+pulldown-cmark = "0.13"
+ammonia = "4"
+csv = "1"
+base64 = "0.22"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }

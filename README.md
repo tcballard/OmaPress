@@ -40,3 +40,11 @@ X API publishing is experimental. The Substack browser companion prepares a draf
 - [Build from source and use the CLI](docs/development.md)
 
 Found a problem? [Open an issue](https://github.com/tcballard/OmaPress/issues) with what happened, your version and a screenshot where useful.
+
+## Own your newsletter (development)
+
+A new optional [newsletter service](docs/newsletters.md) adds subscriber signup,
+email previews, test sends, scheduling and delivery status from the native app.
+It runs separately on Rust/PostgreSQL with Amazon SES. Start with capture mode;
+real email and XPS acceptance are pending. Its configuration is independent of
+OmaPress branding, ready for a future product rename.

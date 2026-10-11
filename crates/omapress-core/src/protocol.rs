@@ -81,6 +81,9 @@ pub fn execute(req: Request) -> Result<Value> {
             inspect(&s.root)
         }
         "inspect" => inspect(root),
+        command if command.starts_with("newsletter-") => {
+            crate::newsletter::action(root, command, a)
+        }
         "substack-gateway-connect" => crate::substack_gateway::connect(a.clone()),
         "substack-gateway-status" => crate::substack_gateway::status(),
         "substack-gateway-draft" | "substack-gateway-schedule" | "substack-gateway-cancel" => {
