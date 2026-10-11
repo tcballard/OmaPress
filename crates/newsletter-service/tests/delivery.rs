@@ -296,4 +296,26 @@ async fn restart_uncertainty_events_and_cancel(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(state, "cancelled");
+    // A bounced operator test address must also be suppressed before it is ever imported.
+    let (code, test) = req(
+        &router,
+        "POST",
+        &format!("/v1/campaigns/{id}/test"),
+        json!({"revision":new["revision"],"request_id":Uuid::new_v4()}),
+    )
+    .await;
+    assert_eq!(code, 200);
+    let test_id = Uuid::parse_str(test["delivery_id"].as_str().unwrap()).unwrap();
+    sqlx::query("UPDATE deliveries SET state='unknown' WHERE id=$1")
+        .bind(test_id)
+        .execute(&app.db)
+        .await
+        .unwrap();
+    let bounce = json!({"eventType":"Bounce","mail":{"messageId":"ses-test","tags":{"newsletter_delivery":[test_id.to_string()]}},"bounce":{"bouncedRecipients":[{"emailAddress":"author@example.com"}]}});
+    worker::apply_event(&app, "test-bounce", &bounce)
+        .await
+        .unwrap();
+    import(&router, &n, "author@example.com").await;
+    let active:i64=sqlx::query_scalar("SELECT count(*) FROM subscriptions s JOIN contacts c ON c.id=s.contact_id WHERE c.email='author@example.com' AND s.status='active'").fetch_one(&app.db).await.unwrap();
+    assert_eq!(active, 0);
 }

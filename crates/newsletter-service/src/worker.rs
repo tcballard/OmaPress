@@ -164,7 +164,8 @@ pub async fn apply_event(app: &App, event_id: &str, event: &Value) -> Result<()>
                     .is_some_and(|s| s.eq_ignore_ascii_case(&recipient)))),
             "Event recipient does not match delivery"
         );
-        sqlx::query("UPDATE contacts SET suppressed=true,suppression_reason=$2 WHERE email=$1")
+        sqlx::query("INSERT INTO contacts(id,email,suppressed,suppression_reason) VALUES($1,$2,true,$3) ON CONFLICT(email) DO UPDATE SET suppressed=true,suppression_reason=EXCLUDED.suppression_reason")
+            .bind(Uuid::new_v4())
             .bind(&recipient)
             .bind(state)
             .execute(&mut *tx)
